@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {{ super() }}  <!-- Retains everything from the base template's head block -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/download.css') }}">
+    <script>
+        function downloadFile(game, asset, filename) {
+    const file_path = encodeURIComponent(`${game}/${asset}/${filename}`);
+    fetch('/download_file/' + file_path)
+        .then(response => response.blob())
+        .then(blob => {
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename; // the filename for download
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a); // Clean up
+        })
+        .catch(() => alert('Could not download the file.'));
+}
+
+
+    </script>
+{% endblock %}
+
+{% block content %}
+    <h1>Download Asset</h1>
+    <form action="/download" method="post">
+        <label for="game">Select a game:</label>
+        <select id="game" name="game" onchange="this.form.submit()">
+            <option value="">Select a Game</option>
+            {% for game in games %}
+                <option value="{{ game }}" {% if selected_game == game %}selected{% endif %}>{{ game }}</option>
+            {% endfor %}
+        </select>
+
+        {% if assets %}
+            <label for="asset">Select an asset:</label>
+            <select id="asset" name="asset" onchange="this.form.submit()">
+                <option value="">Select an Asset</option>
+                {% for asset in assets %}
+                    <option value="{{ asset }}" {% if selected_asset == asset %}selected{% endif %}>{{ asset }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+
+        {% if versions %}
+        <!-- Container for the horizontal scrolling of thumbnails -->
+        <div class="versions-scroll-container">
+            <div class="versions-gallery">
+                {% for version in versions %}
+                    <div class="version-item">
+                        <!-- Make sure to use the Dropbox URL here -->
+                        <img src="{{ version.thumbnail_url }}" alt="{{ version.filename }}" onclick="downloadFile('{{ selected_game }}', '{{ selected_asset }}', '{{ version.filename }}')">
+                        <p>{{ version.filename }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        
+    {% endif %}
+
+    </form>
+{% endblock %}
+
+
+

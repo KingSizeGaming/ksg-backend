@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {{ super() }}  <!-- Retains everything from the base template's head block -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>Welcome to Art Asset Manager</h1>
+
+</div>
+<section id="updates">
+    <h2>Latest Updates</h2>
+    <article>
+        <h3>Art Asset Manager is Live!</h3>
+        <p>Date: 2024-04-21</p>
+        <p>I'm excited to annouce the launch of the KingSize Games Art Asset Manegement Tool. Consider this the beta version and please email me with any bugs/flaws you find with the tool.</p>
+    </article>
+    <!-- Additional updates can be added in similar <article> tags -->
+</section>
+<footer>
+    <p>Contact us at <a href="mailto:kwilcox@kingsizegames.com">kwilcox@kingsizegames.com</a></p>
+</footer>
+{% endblock %}
+
+
+

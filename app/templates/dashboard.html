@@ -1,0 +1,107 @@
+{% extends 'base.html' %} {% block head %} {{ super() }}
+<!-- Retains everything from the base template's head block -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboard.css') }}"
+/>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // JavaScript and AJAX functions here
+    function toggleComments(activityId) {
+      console.log("Toggling comments for activity ID:", activityId);
+      var commentsDiv = $("#comments-" + activityId);
+      var toggleButton = $("#toggle-button-" + activityId);
+      if (commentsDiv.is(":hidden")) {
+        commentsDiv.show();
+        toggleButton.text("Hide Comments");
+        fetch("/get_comments/" + activityId)
+          .then((response) => response.json())
+          .then((data) => {
+            var commentsContent = "";
+            data.forEach((comment) => {
+              commentsContent += `<p>${comment.author}: ${
+                comment.comment
+              } - ${new Date(comment.created_at).toLocaleString()}</p>`;
+            });
+            commentsDiv.html(
+              commentsContent +
+                `<textarea id='new-comment-${activityId}'></textarea><button onclick='addComment(${activityId})'>Add Comment</button>`
+            );
+          });
+      } else {
+        commentsDiv.hide();
+        toggleButton.text("View Comments");
+      }
+    }
+
+    window.toggleComments = toggleComments; // Making it accessible globally
+
+    window.addComment = function (activityId) {
+      console.log("adding comments for activity ID:", activityId);
+      var commentText = $("#new-comment-" + activityId).val();
+      fetch("/add_comment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          activity_log_id: activityId,
+          comment: commentText,
+        }),
+      }).then(() => {
+        toggleComments(activityId); // Refresh comments list
+      });
+    };
+  });
+</script>
+{% endblock %} {% block title %} Dashboard - Art Asset Manager {% endblock %} {%
+block content %}
+<div class="header">
+  <h1>Dashboard</h1>
+</div>
+<section>
+  <h2>Activity Log</h2>
+  {% if activity_log %}
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Action</th>
+        <th>Asset Name</th>
+        <th>Timestamp</th>
+        <th>Path</th>
+        <th>Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in activity_log %}
+      <tr>
+        <td>{{ entry['user_email'] }}</td>
+        <td>{{ entry['action_type'] }}</td>
+        <td>{{ entry['asset_name'] }}</td>
+        <td>{{ entry['created_at'] }}</td>
+        <td>{{ entry['path'] }}</td>
+        <td>
+          <button
+            id="toggle-button-{{ entry.id }}"
+            onclick="toggleComments('{{ entry.id }}')"
+          >
+            View Comments
+          </button>
+
+          <div id="comments-{{ entry['id'] }}" style="display: none">
+            <!-- Comments will be loaded here by JavaScript -->
+            <textarea id="new-comment-{{ entry['id'] }}"></textarea>
+            <button onclick="addComment('{{ entry.id }}')">Add Comment</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No activity log entries found.</p>
+  {% endif %}
+</section>
+{% endblock %}

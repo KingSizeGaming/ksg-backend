@@ -1,0 +1,66 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Aligns navigation to the top and user links to the bottom */
+    height: 100vh; /* Full height to ensure the sidebar spans the whole viewport height */
+}
+
+.sidebar h3 {
+    color: #333;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    padding: 8px 0;
+}
+
+.sidebar ul li a {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.sidebar ul li a:hover {
+    color: #555;
+}
+
+.content {
+    flex-grow: 1;
+    padding: 20px;
+    background-color: #fff;
+    overflow: auto;
+}
+
+.main-nav, .user-nav {
+    list-style-type: none; /* Removes list bullets */
+    padding: 0;
+}
+
+.main-nav a, .user-nav a {
+    display: block;
+    padding: 10px;
+    color: #333;
+    text-decoration: none;
+}
+
+.main-nav a:hover, .user-nav a:hover {
+    background-color: #0ba22e54;
+border-radius: 5px;
+}
+
+.user-nav {
+    margin-top: auto; /* Pushes user-nav to the bottom */
+    background: #e0e0e0; /* Gives a slight background differentiation */
+}

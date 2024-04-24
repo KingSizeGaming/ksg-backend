@@ -1,0 +1,72 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+    color: #333;
+}
+h1 {
+    color: #2c3e50;
+    text-align: center;
+}
+form {
+    background: white;
+    max-width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+label {
+    font-weight: bold;
+    margin-top: 10px;
+    display: block;
+}
+select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* Adds padding and border to the element's total width and height */
+}
+button {
+    background-color: #5cb85c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 20px;
+    display: block;
+    width: 100%;
+}
+button:hover {
+    background-color: #4cae4c;
+}
+
+.versions-gallery {
+    display: flex;
+    flex-wrap: nowrap; /* Do not wrap items to the next line */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    gap: 10px; /* Spacing between items */
+    padding: 10px 0;
+    white-space: nowrap; /* Keep the items in a single line */
+}
+
+.version-item {
+    flex: 0 0 auto; /* Do not grow or shrink, but allow basis auto */
+    margin-right: 10px; /* Spacing between images */
+}
+
+.version-item img {
+    width: 400px; /* Set maximum width for the images */
+    height: auto; /* Keep the aspect ratio */
+    cursor: pointer;
+    border: 1px solid #ddd; /* Optional: adds a border around the images */
+    border-radius: 4px; /* Optional: rounds the corners of the images */
+}
+.versions-scroll-container {
+    overflow-x: auto; /* Enable horizontal scrolling */
+    max-width: 100%; /* Limit the width of the container */
+}
+
