@@ -16,8 +16,8 @@ def dropbox_connect():
         app_secret=current_app.config['DROPBOX_APP_SECRET']
     )
 
-def get_image_url(file_path):
-    dbx = dropbox_connect()
+def get_image_url(dbx, file_path):
+    
     full_path = f"/{file_path.lstrip('/')}"  # Ensure the path starts with '/'
     try:
         temp_link = dbx.files_get_temporary_link(full_path)
@@ -70,6 +70,24 @@ def add_comment_to_activity(activity_id, user_email, comment):
         return {'status': 'success'}
     except Exception as e:
         return {'status': 'error', 'message': str(e)}
+    
+def add_assignment_to_database(assigned_to, assigned_by, asset_path, assignment_details, to_be_completed_by):
+    supabase = get_supabase()
+    record = {
+        "assigned_to": assigned_to,
+        "assigned_by": assigned_by,
+        "asset_path": asset_path,
+        "details": assignment_details,
+        "to_be_completed_by": to_be_completed_by
+    }
+    try:
+        response = supabase.table("assignments").insert(record).execute()
+        if response.error:
+            raise Exception(response.error.message)
+        return {'status': 'success', 'message': 'Assignment added successfully'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
 
 
 def get_activity_log(supabase):
@@ -79,6 +97,15 @@ def get_activity_log(supabase):
         return response.data
     except Exception as e:
         flash(f"Error fetching activity log: {e}")
+        return None
+    
+def get_assignments(supabase):
+    """Fetches the assignments from Supabase."""
+    try:
+        response = supabase.table("assignments").select("*").order('to_be_completed_by', desc=True).execute()
+        return response.data
+    except Exception as e:
+        flash(f"Error fetching assignments: {e}")
         return None
 
 def get_comments_by_activity_id(supabase, activity_id):
@@ -136,9 +163,9 @@ def dropbox_upload_file(local_file_path, dropbox_folder_path):
             # st.error(f"Error uploading file to Dropbox: {e}")
             return None 
 
-def list_folders(path=""):
+def list_folders(dbx, path=""):
     """List all folders within the specified path."""
-    dbx = dropbox_connect()
+
     try:
         folders = dbx.files_list_folder(path).entries
         folder_names = [folder.name for folder in folders if isinstance(folder, dropbox.files.FolderMetadata)]
@@ -149,9 +176,9 @@ def list_folders(path=""):
 
 
 
-def list_files(path):
+def list_files(dbx, path):
         """List all files within the specified path."""
-        dbx = dropbox_connect()
+
         try:
             files = dbx.files_list_folder(path).entries
             file_names = [
@@ -162,9 +189,9 @@ def list_files(path):
             
             return []
         
-def download_file(file_path):
+def download_file(dbx, file_path):
     print(file_path)
-    dbx = dropbox_connect()
+    
 
     try:
         _, res = dbx.files_download(file_path)

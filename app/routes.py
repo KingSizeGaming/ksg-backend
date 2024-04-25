@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, current_app, url_for, session, send_file, jsonify, Flask
 from flask_login import login_required, login_user, current_user, logout_user
-from .services import dropbox_upload_file, list_folders, dropbox_connect, get_supabase, list_files, download_file, get_activity_log, get_supabase, log_activity, get_comments_by_activity_id, add_comment_to_activity, get_image_url
+from .services import dropbox_upload_file, list_folders, dropbox_connect, get_supabase, list_files, download_file, get_activity_log, get_supabase, log_activity, get_comments_by_activity_id, add_comment_to_activity, get_image_url, add_assignment_to_database, get_assignments
 from .models import User
 from werkzeug.utils import secure_filename
 import os
@@ -56,6 +56,13 @@ def init_routes(app):
         supabase = get_supabase()
         activity_log = get_activity_log(supabase)
         return render_template('dashboard.html', activity_log=activity_log)
+    
+    @app.route('/assignments')
+    @login_required
+    def assignments():
+        supabase = get_supabase()
+        assignments_data = get_assignments(supabase)
+        return render_template('assignments.html', assignments=assignments_data)
 
     @app.route('/get_comments/<string:activity_id>')
     def get_comments(activity_id):
@@ -76,12 +83,25 @@ def init_routes(app):
     
         response = add_comment_to_activity(activity_id, user_email, comment)
         return jsonify(response), 200
+    
+    @app.route('/add_assignment', methods=['POST'])
+    @login_required
+    def add_assignment():
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+
+        result = add_assignment_to_database(**data)
+        if result['status'] == 'error':
+            return jsonify(result), 500
+        return jsonify(result), 200
 
     
     @app.route('/upload', methods=['GET', 'POST'])
     @login_required
     def upload_file():
-        folder_options = list_folders()  # Assuming this function is correctly fetching folder names
+        dbx = dropbox_connect()
+        folder_options = list_folders(dbx) 
 
         if request.method == 'POST':
             uploaded_file = request.files.get('file')
@@ -122,20 +142,21 @@ def init_routes(app):
     def download():
         path = ""  # Define your root Dropbox path
         try:
-            games = list_folders(path)
+            dbx = dropbox_connect()
+            games = list_folders(dbx, path)
             selected_game = request.form.get('game')
-            assets = list_folders(f"{path}/{selected_game}") if selected_game else []
+            assets = list_folders(dbx, f"{path}/{selected_game}") if selected_game else []
             selected_asset = request.form.get('asset')
             selected_version = request.form.get('version')
-
+            
             # Prepare the versions info including the thumbnail URLs
             if selected_asset:
-                versions_paths = list_files(f"{path}/{selected_game}/{selected_asset}")
+                versions_paths = list_files(dbx, f"{path}/{selected_game}/{selected_asset}")
                 versions_info = [
                     {
                         'filename': version_path.split('/')[-1],
                         'filepath': version_path,
-                        'thumbnail_url': get_image_url(f"/{selected_game}/{selected_asset}/{version_path}")
+                        'thumbnail_url': get_image_url(dbx, f"/{selected_game}/{selected_asset}/{version_path}")
                     }
                     for version_path in versions_paths
                 ]
@@ -145,7 +166,7 @@ def init_routes(app):
             # Handle the file download if a specific version was selected
             if request.method == 'POST' and selected_version:
                 file_path = f"{path}/{selected_game}/{selected_asset}/{selected_version}"
-                file_content = download_file(file_path)
+                file_content = download_file(dbx, file_path)
                 if file_content:
                     return send_file(BytesIO(file_content), attachment_filename=selected_version, as_attachment=True)
                 else:

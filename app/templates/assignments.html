@@ -1,0 +1,136 @@
+{% extends 'base.html' %} {% block head %} {{ super() }}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/assignments.css') }}"
+/>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function submitAssignment() {
+    const assignmentData = {
+      assigned_to: document.getElementById("assignedTo").value,
+      assigned_by: document.getElementById("assignedBy").value,
+      asset_path: document.getElementById("assetPath").value,
+      assignment_details: document.getElementById("details").value,
+      to_be_completed_by: document.getElementById("completionDate").value,
+    };
+
+    fetch("/add_assignment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(assignmentData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.status === "success") {
+          alert(data.message); // Show success message
+          $("#assignmentModal").modal("hide"); // Close the modal
+          // Optional: Clear form or update the page
+        } else {
+          throw new Error(data.message); // Throw to catch block if error
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("Error adding assignment: " + error.message);
+      });
+  }
+</script>
+
+{% endblock %} {% block title %} Assignments - Art Asset Manager {% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Assignments</h2>
+  <button
+    type="button"
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#assignmentModal"
+  >
+    Add Assignment
+  </button>
+
+  <!-- Display Assignments in a Table -->
+  <table class="table table-striped mt-3">
+    <thead>
+      <tr>
+        <th scope="col">Assigned To</th>
+        <th scope="col">Assigned By</th>
+        <th scope="col">Asset Path</th>
+        <th scope="col">Details</th>
+        <th scope="col">Due Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assignment in assignments %}
+      <tr>
+        <td>{{ assignment.assigned_to }}</td>
+        <td>{{ assignment.assigned_by }}</td>
+        <td>{{ assignment.asset_path }}</td>
+        <td>{{ assignment.details }}</td>
+        <td>{{ assignment.to_be_completed_by }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Existing code for adding assignments remains unchanged -->
+  <div
+    class="modal fade"
+    id="assignmentModal"
+    tabindex="-1"
+    aria-labelledby="assignmentModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+
+        </div>
+        <div class="modal-body">
+          <form id="assignmentForm">
+            <div class="mb-3">
+              <label for="assignedTo" class="form-label">Assigned To</label>
+              <input type="text" class="form-control" id="assignedTo" />
+            </div>
+            <div class="mb-3">
+              <label for="assignedBy" class="form-label">Assigned By</label>
+              <input type="text" class="form-control" id="assignedBy" />
+            </div>
+            <div class="mb-3">
+              <label for="assetPath" class="form-label">Asset Path</label>
+              <input type="text" class="form-control" id="assetPath" />
+            </div>
+            <div class="mb-3">
+              <label for="details" class="form-label">Assignment Details</label>
+              <textarea class="form-control" id="details" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="completionDate" class="form-label"
+                >To Be Completed By</label
+              >
+              <input type="date" class="form-control" id="completionDate" />
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="submitAssignment()"
+          >
+            Save changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
