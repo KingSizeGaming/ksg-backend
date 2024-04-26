@@ -5,24 +5,41 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/download.css') }}">
     <script>
         function downloadFile(game, asset, filename) {
-    const file_path = encodeURIComponent(`${game}/${asset}/${filename}`);
-    fetch('/download_file/' + file_path)
-        .then(response => response.blob())
-        .then(blob => {
-            let url = window.URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename; // the filename for download
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a); // Clean up
-        })
-        .catch(() => alert('Could not download the file.'));
-}
-
-
+            const file_path = encodeURIComponent(`${game}/${asset}/${filename}`);
+            fetch('/download_file/' + file_path)
+                .then(response => response.blob())
+                .then(blob => {
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(() => alert('Could not download the file.'));
+        }
+    
+        function formatFilenameToDate(filename) {
+            // Extract the date part from the filename (assuming format is 'name_YYYYMMDDHHMMSS.ext')
+            const regex = /_(\d{8}\d{6})\./; // Matches the date part
+            const matches = filename.match(regex);
+            if (matches && matches[1]) {
+                const dateString = matches[1]; // 'YYYYMMDDHHMMSS'
+                const year = dateString.substring(0, 4);
+                const month = dateString.substring(4, 6);
+                const day = dateString.substring(6, 8);
+                const hour = dateString.substring(8, 10);
+                const minute = dateString.substring(10, 12);
+                const second = dateString.substring(12, 14);
+                // Format to 'April 24, 2024, 22:22:26'
+                const date = new Date(year, month - 1, day, hour, minute, second);
+                return date.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+            }
+            return 'Invalid date';
+        }
     </script>
 {% endblock %}
 
@@ -52,11 +69,16 @@
         <div class="versions-scroll-container">
             <div class="versions-gallery">
                 {% for version in versions %}
-                    <div class="version-item">
-                        <!-- Make sure to use the Dropbox URL here -->
-                        <img src="{{ version.thumbnail_url }}" alt="{{ version.filename }}" onclick="downloadFile('{{ selected_game }}', '{{ selected_asset }}', '{{ version.filename }}')">
-                        <p>{{ version.filename }}</p>
-                    </div>
+                <div class="version-item">
+                    <img src="{{ version.thumbnail_url }}" alt="{{ version.filename }}" onclick="downloadFile('{{ selected_game }}', '{{ selected_asset }}', '{{ version.filename }}')">
+                    <p>{{ version.filename }}</p>
+                    <p>Uploaded on <span id="date-{{ loop.index }}">{{ version.filename }}</span></p>
+                    <script>
+                        // Set formatted date
+                        document.getElementById('date-' + '{{ loop.index }}').textContent = formatFilenameToDate('{{ version.filename }}');
+                    </script>
+                </div>
+                
                 {% endfor %}
             </div>
         

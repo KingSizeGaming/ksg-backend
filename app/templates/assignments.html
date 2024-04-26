@@ -19,19 +19,16 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(assignmentData),
     })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.status === "success") {
-          alert(data.message); // Show success message
-          $("#assignmentModal").modal("hide"); // Close the modal
-          // Optional: Clear form or update the page
-        } else {
-          throw new Error(data.message); // Throw to catch block if error
-        }
+      .then((response) => {
+
+        //   $("#assignmentModal").modal("hide"); // Close the modal
+          alert("Assignment added successfully."); // Show success message
+          location.reload(); // Reload the page to show the new assignment
+
       })
       .catch((error) => {
         console.error("Error:", error);
-        alert("Error adding assignment: " + error.message);
+        alert("Error adding assignment."); // Simplified error alert
       });
   }
 </script>
@@ -83,9 +80,7 @@
   >
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
-
-        </div>
+        <div class="modal-header"></div>
         <div class="modal-body">
           <form id="assignmentForm">
             <div class="mb-3">

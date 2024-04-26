@@ -11,23 +11,19 @@
   </head>
   <script>
     function getRegistrationToken() {
-      const url = new URL(window.location.href);
-      const token = url.searchParams.get("access_token");
-      return token;
+        const url = new URL(window.location.href);
+        const token = url.hash.split('access_token=')[1].split('&')[0];
+        return token;
     }
 
-    // Assuming you have a hidden form field to store the token
-    const tokenField = document.getElementById("registrationToken");
-
-    window.addEventListener("DOMContentLoaded", function () {
-      if (tokenField) {
+    window.addEventListener('DOMContentLoaded', function () {
         const token = getRegistrationToken();
         if (token) {
-          tokenField.value = token;
+            const tokenField = document.getElementById('registrationToken');
+            tokenField.value = token;
         }
-      }
     });
-  </script>
+</script>
   <body>
     <div class="container">
       <h1>Register Your Account</h1>

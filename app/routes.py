@@ -36,8 +36,8 @@ def init_routes(app):
                 return redirect(url_for('register'))
 
             try:
-                # Attempt to create a new user with the token and password
-                result = supabase.auth.sign_up(email=None, password=password, options={'token': token})
+
+                result = supabase.auth.sign_up(email=None, password=password)
                 if result.error:
                     flash(f"Registration failed: {result.error.message}", 'error')
                     return redirect(url_for('register'))
@@ -162,7 +162,7 @@ def init_routes(app):
                 ]
             else:
                 versions_info = []
-
+            versions_info.reverse()
             # Handle the file download if a specific version was selected
             if request.method == 'POST' and selected_version:
                 file_path = f"{path}/{selected_game}/{selected_asset}/{selected_version}"
