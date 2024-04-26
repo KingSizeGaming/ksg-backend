@@ -183,6 +183,7 @@ def init_routes(app):
     @app.route('/download_file/<path:file_path>')
     def download_file_route(file_path):
         # Decode the URL-encoded file path
+        dbx=dropbox_connect()
         decoded_file_path = unquote(file_path)
         # Make sure it starts with '/'
         if not decoded_file_path.startswith('/'):
@@ -190,7 +191,7 @@ def init_routes(app):
         print(f"Decoded file path: {decoded_file_path}")
 
         # Call the download function with the correct Dropbox file path
-        file_content = download_file(decoded_file_path)
+        file_content = download_file(dbx, decoded_file_path)
         if file_content:
             return send_file(BytesIO(file_content), attachment_filename=os.path.basename(decoded_file_path), as_attachment=True)
         else:
