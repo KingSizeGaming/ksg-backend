@@ -230,3 +230,12 @@ def download_file(dbx, file_path):
     except Exception as e:
         print(f"Failed to download file: {e}")
         return None
+def get_versions_info(dbx, path, game, asset):
+    versions_paths = list_files(dbx, f"{path}/{game}/{asset}")
+    versions_info = [{
+        'filename': version_path.split('/')[-1],
+        'filepath': version_path,
+        'thumbnail_url': get_image_url(dbx, f"/{game}/{asset}/{version_path}")
+    } for version_path in versions_paths]
+    versions_info.reverse()  # Reverse to show newest first
+    return versions_info

@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, current_app, url_for, session, send_file, jsonify, Flask
 from flask_login import login_required, login_user, current_user, logout_user
-from .services import dropbox_upload_file, list_folders, dropbox_connect, get_supabase, list_files, download_file, get_activity_log, get_supabase, log_activity, get_comments_by_activity_id, add_comment_to_activity, get_image_url, add_assignment_to_database, get_assignments
+from .services import dropbox_upload_file, list_folders, dropbox_connect, get_supabase, list_files, download_file, get_activity_log, get_supabase, log_activity, get_comments_by_activity_id, add_comment_to_activity, get_image_url, add_assignment_to_database, get_assignments, get_versions_info
 from .models import User
 from werkzeug.utils import secure_filename
 import os
@@ -141,62 +141,39 @@ def init_routes(app):
 
     def download():
         path = ""  # Define your root Dropbox path
-        try:
-            dbx = dropbox_connect()
-            games = list_folders(dbx, path)
-            selected_game = request.form.get('game')
-            assets = list_folders(dbx, f"{path}/{selected_game}") if selected_game else []
-            selected_asset = request.form.get('asset')
-            selected_version = request.form.get('version')
-            
-            # Prepare the versions info including the thumbnail URLs
-            if selected_asset:
-                versions_paths = list_files(dbx, f"{path}/{selected_game}/{selected_asset}")
-                versions_info = [
-                    {
-                        'filename': version_path.split('/')[-1],
-                        'filepath': version_path,
-                        'thumbnail_url': get_image_url(dbx, f"/{selected_game}/{selected_asset}/{version_path}")
-                    }
-                    for version_path in versions_paths
-                ]
-            else:
-                versions_info = []
-            versions_info.reverse()
-            # Handle the file download if a specific version was selected
-            if request.method == 'POST' and selected_version:
-                file_path = f"{path}/{selected_game}/{selected_asset}/{selected_version}"
-                file_content = download_file(dbx, file_path)
-                if file_content:
-                    return send_file(BytesIO(file_content), attachment_filename=selected_version, as_attachment=True)
-                else:
-                    flash("Failed to download the file.")
-        except Exception as e:
-            app.logger.error(f"Exception occurred: {str(e)}")
-            flash(str(e))
-            return redirect(url_for('download'))
+        dbx = dropbox_connect()
+        games = list_folders(dbx, path)
+        selected_game = request.form.get('game')
+        assets = list_folders(dbx, f"{path}/{selected_game}") if selected_game else []
+        selected_asset = request.form.get('asset') if 'asset' in request.form else None
+
+        versions_info = get_versions_info(dbx, path, selected_game, selected_asset) if selected_asset else []
 
         return render_template('download.html', games=games, selected_game=selected_game,
                                assets=assets, selected_asset=selected_asset,
-                               versions=versions_info)  # Pass versions_info to the template
+                               versions=versions_info)
     
     @app.route('/download_file/<path:file_path>')
     def download_file_route(file_path):
-        # Decode the URL-encoded file path
-        dbx=dropbox_connect()
-        decoded_file_path = unquote(file_path)
-        # Make sure it starts with '/'
-        if not decoded_file_path.startswith('/'):
-            decoded_file_path = '/' + decoded_file_path
+        # Initialize Dropbox connection
+        dbx = dropbox_connect()
+
+        # Decode the URL-encoded file path and ensure it starts with '/'
+        decoded_file_path = '/' + unquote(file_path).lstrip('/')
         print(f"Decoded file path: {decoded_file_path}")
 
-        # Call the download function with the correct Dropbox file path
-        file_content = download_file(dbx, decoded_file_path)
-        if file_content:
-            return send_file(BytesIO(file_content), attachment_filename=os.path.basename(decoded_file_path), as_attachment=True)
-        else:
-            # Handle error, e.g., file not found
-            return "File not found", 404
+        # Attempt to download the file from Dropbox
+        try:
+            _, res = dbx.files_download(decoded_file_path)
+            if res.status_code == 200:
+                print("File downloaded successfully")
+                return send_file(BytesIO(res.content), attachment_filename=os.path.basename(decoded_file_path), as_attachment=True)
+            else:
+                print(f"Failed to download with status code: {res.status_code}")
+                return "File not found", 404
+        except Exception as e:
+            app.logger.error(f"Failed to download file: {e}")
+            return f"An error occurred: {str(e)}", 500
 
     @app.route('/supabase_login', methods=['GET', 'POST'])
     def supabase_login():
