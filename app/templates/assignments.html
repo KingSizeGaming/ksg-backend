@@ -20,11 +20,9 @@
       body: JSON.stringify(assignmentData),
     })
       .then((response) => {
-
         //   $("#assignmentModal").modal("hide"); // Close the modal
-          alert("Assignment added successfully."); // Show success message
-          location.reload(); // Reload the page to show the new assignment
-
+        alert("Assignment added successfully."); // Show success message
+        location.reload(); // Reload the page to show the new assignment
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -85,12 +83,25 @@
           <form id="assignmentForm">
             <div class="mb-3">
               <label for="assignedTo" class="form-label">Assigned To</label>
-              <input type="text" class="form-control" id="assignedTo" />
+              <select class="form-control" id="assignedTo" name="assignedTo">
+                {% for user in users %}
+                <option value="{{ user }}">{{ user }}</option>
+                {% endfor %}
+              </select>
             </div>
+
             <div class="mb-3">
               <label for="assignedBy" class="form-label">Assigned By</label>
-              <input type="text" class="form-control" id="assignedBy" />
+              <input
+                type="text"
+                class="form-control"
+                id="assignedBy"
+                name="assignedBy"
+                value="{{ current_user.email }}"
+                readonly
+              />
             </div>
+
             <div class="mb-3">
               <label for="assetPath" class="form-label">Asset Path</label>
               <input type="text" class="form-control" id="assetPath" />

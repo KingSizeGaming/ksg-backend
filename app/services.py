@@ -90,6 +90,16 @@ def add_assignment_to_database(
         return {"status": "success", "message": "Assignment added successfully"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
+def list_users():
+    # Hardcoded list of user emails
+    data = [
+        "user1@kingsizegames.com",
+        "user2@kingsizegames.com",
+        "user3@kingsizegames.com"
+    ]
+    return data
+
 
 
 def get_activity_log(supabase):

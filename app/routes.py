@@ -29,6 +29,7 @@ from .services import (
     add_assignment_to_database,
     get_assignments,
     get_versions_info,
+    list_users
 )
 from .models import User
 from werkzeug.utils import secure_filename
@@ -93,7 +94,9 @@ def init_routes(app):
     def assignments():
         supabase = get_supabase()
         assignments_data = get_assignments(supabase)
-        return render_template("assignments.html", assignments=assignments_data)
+        user_data = list_users()    
+
+        return render_template("assignments.html", assignments=assignments_data, users=user_data)
 
     @app.route("/get_comments/<string:activity_id>")
     def get_comments(activity_id):
