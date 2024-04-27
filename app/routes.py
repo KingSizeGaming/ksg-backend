@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, current_app, url_for, session, send_file, jsonify, Flask
+from flask import render_template, request, redirect, url_for, flash, current_app, url_for, session, send_file, jsonify, Flask, Response
 from flask_login import login_required, login_user, current_user, logout_user
 from .services import dropbox_upload_file, list_folders, dropbox_connect, get_supabase, list_files, download_file, get_activity_log, get_supabase, log_activity, get_comments_by_activity_id, add_comment_to_activity, get_image_url, add_assignment_to_database, get_assignments, get_versions_info
 from .models import User
@@ -155,25 +155,19 @@ def init_routes(app):
     
     @app.route('/download_file/<path:file_path>')
     def download_file_route(file_path):
-        # Initialize Dropbox connection
         dbx = dropbox_connect()
-
-        # Decode the URL-encoded file path and ensure it starts with '/'
-        decoded_file_path = '/' + unquote(file_path).lstrip('/')
-        print(f"Decoded file path: {decoded_file_path}")
-
-        # Attempt to download the file from Dropbox
         try:
-            _, res = dbx.files_download(decoded_file_path)
-            if res.status_code == 200:
-                print("File downloaded successfully")
-                return send_file(BytesIO(res.content), attachment_filename=os.path.basename(decoded_file_path), as_attachment=True)
-            else:
-                print(f"Failed to download with status code: {res.status_code}")
-                return "File not found", 404
+            _, res = dbx.files_download('/' + file_path)  # Ensure path starts with '/'
+            print("File size:", len(res.content))  # Debugging file size
+            return send_file(
+                BytesIO(res.content),
+                attachment_filename=os.path.basename(file_path),  # Correct parameter for filename
+                as_attachment=True,
+                # mimetype='image/png'  # Assume PNG for example, adjust based on your needs
+            )
         except Exception as e:
-            app.logger.error(f"Failed to download file: {e}")
-            return f"An error occurred: {str(e)}", 500
+            print(f"Failed to download file: {e}")
+            return Response("File not found", status=404)
 
     @app.route('/supabase_login', methods=['GET', 'POST'])
     def supabase_login():
