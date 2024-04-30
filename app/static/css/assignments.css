@@ -92,4 +92,7 @@ textarea {
     text-align: right; /* Aligns buttons to the right */
 }
 
-
+.small-text {
+    font-size: 0.8em;
+    color: #e0e0e0;
+}

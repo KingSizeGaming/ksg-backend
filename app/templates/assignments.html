@@ -12,6 +12,7 @@
       asset_path: document.getElementById("assetPath").value,
       assignment_details: document.getElementById("details").value,
       to_be_completed_by: document.getElementById("completionDate").value,
+      completed: false,
     };
 
     fetch("/add_assignment", {
@@ -50,9 +51,12 @@
       <tr>
         <th scope="col">Assigned To</th>
         <th scope="col">Assigned By</th>
-        <th scope="col">Asset Path</th>
+        <th scope="col">
+          Asset Path <span class="small-text">Click to Download</span>
+        </th>
         <th scope="col">Details</th>
         <th scope="col">Due Date</th>
+        <th scope="col">Completed?</th>
       </tr>
     </thead>
     <tbody>
@@ -60,9 +64,28 @@
       <tr>
         <td>{{ assignment.assigned_to }}</td>
         <td>{{ assignment.assigned_by }}</td>
-        <td>{{ assignment.asset_path }}</td>
+        <td>
+          <a
+            href="{{ url_for('download_file_route', file_path=assignment.asset_path) }}"
+            download
+            >{{ assignment.asset_path }}</a
+          >
+        </td>
+
         <td>{{ assignment.details }}</td>
         <td>{{ assignment.to_be_completed_by }}</td>
+        <td>
+          {% if not assignment.completed %}
+          <form
+            action="{{ url_for('submit_assignment', assignment_id=assignment.id, asset_path=assignment.asset_path) }}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <input type="file" name="file" required />
+            <button type="submit">Submit</button>
+          </form>
+          {% else %} Yes {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

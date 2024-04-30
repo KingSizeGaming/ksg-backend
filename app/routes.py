@@ -129,6 +129,37 @@ def init_routes(app):
         if result["status"] == "error":
             return jsonify(result), 500
         return jsonify(result), 200
+    
+    @app.route("/submit_assignment/<int:assignment_id>/<path:asset_path>", methods=["POST"])
+    @login_required
+    def submit_assignment(assignment_id, asset_path):
+        # assignment = get_assignment_by_id(assignment_id)
+        # if not assignment or assignment.completed:
+        #     flash("Invalid or already completed assignment.", "error")
+        #     return redirect(url_for("assignments"))
+
+        uploaded_file = request.files.get("file")
+        if uploaded_file and uploaded_file.filename:
+            filename = secure_filename(uploaded_file.filename)
+            temp_dir = os.path.join(current_app.root_path, "temp")
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_file_path = os.path.join(temp_dir, filename)
+
+            uploaded_file.save(temp_file_path)
+
+            dropbox_file_path = f"/{asset_path}/{filename}"  # Construct full Dropbox path
+            if dropbox_upload_file(temp_file_path, dropbox_file_path):
+                os.remove(temp_file_path)
+                # update_assignment_status(assignment_id, True)  # Set assignment as completed
+                print("Assignment submitted successfully.")
+                log_activity(get_supabase(), current_user.email, "upload", filename, dropbox_file_path)
+            else:
+                os.remove(temp_file_path)
+                print("Error uploading file to Dropbox.")
+        else:
+            flash("No file was uploaded.", "error")
+
+        return redirect(url_for("assignments"))
 
     @app.route("/upload", methods=["GET", "POST"])
     @login_required
@@ -159,7 +190,7 @@ def init_routes(app):
                     )  # Clean up the temporary file after upload
 
                     if success:
-                        flash("File uploaded successfully.")
+                        print("File uploaded successfully.")
                         log_activity(
                             get_supabase(),
                             current_user.email,
@@ -169,7 +200,7 @@ def init_routes(app):
                         )
 
                     else:
-                        flash("Error uploading file to Dropbox.")
+                        print("Error uploading file to Dropbox.")
                 else:
                     flash("Invalid folder selected.", "error")
             else:

@@ -73,6 +73,7 @@
                     <img src="{{ version.thumbnail_url }}" alt="{{ version.filename }}" onclick="downloadFile('{{ selected_game }}', '{{ selected_asset }}', '{{ version.filename }}')">
                     <p>{{ version.filename }}</p>
                     <p>Uploaded on <span id="date-{{ loop.index }}">{{ version.filename }}</span></p>
+                    <p>Full Path: {{ selected_game }}/{{ selected_asset }}/{{ version.filename }}</p>
                     <script>
                         // Set formatted date
                         document.getElementById('date-' + '{{ loop.index }}').textContent = formatFilenameToDate('{{ version.filename }}');
