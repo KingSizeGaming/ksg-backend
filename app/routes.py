@@ -41,6 +41,7 @@ from supabase import create_client, Client
 from io import BytesIO
 from urllib.parse import unquote
 import dropbox
+import zipfile
 
 
 def init_routes(app):
@@ -161,7 +162,9 @@ def init_routes(app):
 
             uploaded_file.save(temp_file_path)
 
-            dropbox_file_path = f"/{asset_path}"  # Construct full Dropbox path
+            # Decode the URL-encoded file path and ensure it starts with '/'
+            decoded_file_path =unquote(asset_path)
+            dropbox_file_path = f"/{decoded_file_path}"  # Construct full Dropbox path
             if dropbox_upload_file(temp_file_path, dropbox_file_path):
                 os.remove(temp_file_path)
                 update_assignment_status(
@@ -226,30 +229,7 @@ def init_routes(app):
 
         return render_template("upload.html", folder_options=folder_options)
 
-    @app.route("/download", methods=["GET", "POST"])
-    @login_required
-    def download():
-        path = ""  # Define your root Dropbox path
-        dbx = dropbox_connect()
-        games = list_folders(dbx, path)
-        selected_game = request.form.get("game")
-        assets = list_folders(dbx, f"{path}/{selected_game}") if selected_game else []
-        selected_asset = request.form.get("asset") if "asset" in request.form else None
 
-        versions_info = (
-            get_versions_info(dbx, path, selected_game, selected_asset)
-            if selected_asset
-            else []
-        )
-
-        return render_template(
-            "download.html",
-            games=games,
-            selected_game=selected_game,
-            assets=assets,
-            selected_asset=selected_asset,
-            versions=versions_info,
-        )
 
     @app.route("/download_file/<path:file_path>")
     def download_file_route(file_path):
@@ -277,6 +257,63 @@ def init_routes(app):
                 return "File not found", 404
         except Exception as e:
             print(f"Failed to download file: {e}")
+            return f"An error occurred: {str(e)}", 500
+
+    @app.route("/download_file_folder")
+    def download_route():
+        dbx = (
+            dropbox_connect()
+        )  # Ensure you have a function to handle Dropbox connection
+        path = request.args.get("path")
+        if not path:
+            return "No path provided", 400
+
+        decoded_path = "/" + unquote(path).lstrip(
+            "/"
+        )  # Ensure the path is correctly formatted
+
+        try:
+            # Check if the path is for a file or a folder
+            metadata = dbx.files_get_metadata(decoded_path)
+            if isinstance(metadata, dropbox.files.FileMetadata):
+                # It's a file, download it
+                _, res = dbx.files_download(decoded_path)
+                if res.status_code == 200:
+                    print("File downloaded successfully")
+                    return send_file(
+                        BytesIO(res.content),
+                        as_attachment=True,
+                        download_name=os.path.basename(decoded_path),
+                        mimetype=None,  # Flask will guess the MIME type
+                    )
+                else:
+                    print(
+                        f"Failed to download file with status code: {res.status_code}"
+                    )
+                    return "File not found", 404
+            elif isinstance(metadata, dropbox.files.FolderMetadata):
+                # It's a folder, download as zip
+                _, res = dbx.files_download_zip(decoded_path)
+                if res.status_code == 200:
+                    print("Folder downloaded successfully as zip")
+                    zip_buffer = BytesIO(res.content)
+                    zip_buffer.seek(0)
+                    return send_file(
+                        zip_buffer,
+                        as_attachment=True,
+                        download_name=f"{metadata.name}.zip",
+                        mimetype="application/zip",
+                    )
+                else:
+                    print(
+                        f"Failed to download folder with status code: {res.status_code}"
+                    )
+                    return "Folder not found", 404
+        except dropbox.exceptions.ApiError as e:
+            print(f"Dropbox API error: {e}")
+            return f"An error occurred with Dropbox API: {str(e)}", 500
+        except Exception as e:
+            print(f"Unhandled error: {e}")
             return f"An error occurred: {str(e)}", 500
 
     @app.route("/supabase_login", methods=["GET", "POST"])

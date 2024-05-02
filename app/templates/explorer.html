@@ -1,46 +1,83 @@
-{% extends 'base.html' %} 
-{% block head %} 
-    {{ super() }}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}" />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script>
-      $(document).ready(function () {
-        // Function to update the path display
-        function updatePathDisplay(newPath) {
-          $('#current-path').text(newPath);
-        }
+{% extends 'base.html' %} {% block head %} {{ super() }}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/explorer.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+/>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+  $(document).ready(function () {
+    let pathHistory = [""]; // Initialize the array with the root path
 
-        $("body").on("click", "a.folder-link", function (e) {
-          e.preventDefault();
-          var path = $(this).data("path");
-          updatePathDisplay(path);  // Update the path display
-          $.get("/folder", { path: path }, function (data) {
-            $("#file-container").empty();
-            data.forEach(function (item) {
-              var link = item.type === "folder"
-                ? `<a href="#" class="folder-link" data-path="${item.path_lower}">${item.name}</a>`
-                : item.name;
-              $("#file-container").append(`<div>${link}</div>`);
-            });
-          });
+    function updatePathDisplay(newPath) {
+      $("#current-path").text(newPath);
+      if (newPath !== pathHistory[pathHistory.length - 1]) {
+        pathHistory.push(newPath); // Only add the new path if it's not the current path
+      }
+    }
+
+    $("body").on("click", "a.folder-link", function (e) {
+      e.preventDefault();
+      var newPath = $(this).data("path");
+      updatePathDisplay(newPath);
+      loadFolderContents(newPath);
+    });
+
+    function loadFolderContents(path) {
+      $.get("/folder", { path: path }, function (data) {
+        $("#file-container").empty();
+        data.forEach(function (item) {
+          var downloadPath = encodeURIComponent(item.path_lower);
+          var downloadLink = `/download_file_folder?path=${downloadPath}`; // Unified download link for both files and folders
+          var iconClass =
+            item.type === "folder" ? "fa fa-folder" : "fa fa-file"; // Choose icon based on type
+          var linkHTML = `<div>
+                                <a href="#" class="folder-link" data-path="${item.path_lower}">
+                                    <i class="${iconClass} folder-icon"></i>${item.name}
+                                </a>
+                                <a href="${downloadLink}" class="download-link">
+                                    <i class="fa fa-download"></i>Download
+                                </a>
+                            </div>`;
+          $("#file-container").append(linkHTML);
         });
-
-        // Initialize the path display
-        updatePathDisplay(''); // Start with the root path
       });
-    </script>
-{% endblock %} 
-{% block content %}
+    }
+
+    // Handle back navigation
+    $("#go-back").click(function () {
+      if (pathHistory.length > 1) {
+        pathHistory.pop(); // Remove the current path
+        var previousPath = pathHistory[pathHistory.length - 1]; // Get the last path
+        updatePathDisplay(previousPath);
+        loadFolderContents(previousPath);
+      }
+    });
+
+    // Initialize the path display with the root path
+    updatePathDisplay(pathHistory[0]);
+  });
+</script>
+{% endblock %} {% block content %}
 <h1>File Explorer</h1>
-<p>Current Path: <span id="current-path"></span></p> <!-- Path display element -->
+<p>
+  Current Path: <span id="current-path"></span
+  ><button id="go-back">Go Back</button>
+</p>
+<!-- Path display element -->
 <div id="file-container">
   {% for file in files %}
   <div>
     {% if file.type == 'folder' %}
-    <a href="#" class="folder-link" data-path="{{ file.path_lower }}">{{ file.name }}</a>
-    {% else %} {{ file.name }} {% endif %}
+    <a href="#" class="folder-link" data-path="{{ file.path_lower }}">
+      <i class="fa fa-folder folder-icon"></i>{{ file.name }}
+    </a>
+    {% else %}
+    <i class="fa fa-file file-icon"></i>{{ file.name }} {% endif %}
   </div>
   {% endfor %}
 </div>
 {% endblock %}
-

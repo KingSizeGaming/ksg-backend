@@ -1,15 +1,32 @@
-#files div {
-    margin-top: 10px;
-    padding: 5px;
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+#file-container {
+    background: white;
     border: 1px solid #ccc;
-    background-color: #f9f9f9;
+    padding: 10px;
 }
 
-#files .folder {
+.folder-link, #go-back {
     cursor: pointer;
-    color: blue;
+    color: #0275d8;
+    text-decoration: none;
 }
 
-#files .folder:hover {
+.folder-link:hover, #go-back:hover {
     text-decoration: underline;
 }
+
+#current-path {
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.folder-icon, .file-icon {
+    margin-right: 5px;
+}
+
