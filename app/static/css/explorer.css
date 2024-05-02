@@ -1,0 +1,15 @@
+#files div {
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+}
+
+#files .folder {
+    cursor: pointer;
+    color: blue;
+}
+
+#files .folder:hover {
+    text-decoration: underline;
+}

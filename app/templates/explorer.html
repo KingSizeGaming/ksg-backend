@@ -1,0 +1,46 @@
+{% extends 'base.html' %} 
+{% block head %} 
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        // Function to update the path display
+        function updatePathDisplay(newPath) {
+          $('#current-path').text(newPath);
+        }
+
+        $("body").on("click", "a.folder-link", function (e) {
+          e.preventDefault();
+          var path = $(this).data("path");
+          updatePathDisplay(path);  // Update the path display
+          $.get("/folder", { path: path }, function (data) {
+            $("#file-container").empty();
+            data.forEach(function (item) {
+              var link = item.type === "folder"
+                ? `<a href="#" class="folder-link" data-path="${item.path_lower}">${item.name}</a>`
+                : item.name;
+              $("#file-container").append(`<div>${link}</div>`);
+            });
+          });
+        });
+
+        // Initialize the path display
+        updatePathDisplay(''); // Start with the root path
+      });
+    </script>
+{% endblock %} 
+{% block content %}
+<h1>File Explorer</h1>
+<p>Current Path: <span id="current-path"></span></p> <!-- Path display element -->
+<div id="file-container">
+  {% for file in files %}
+  <div>
+    {% if file.type == 'folder' %}
+    <a href="#" class="folder-link" data-path="{{ file.path_lower }}">{{ file.name }}</a>
+    {% else %} {{ file.name }} {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+

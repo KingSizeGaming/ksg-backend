@@ -77,23 +77,32 @@ block content %}
     <tbody>
       {% for entry in activity_log %}
       <tr>
-        <td>{{ entry['user_email'] }}</td>
-        <td>{{ entry['action_type'] }}</td>
-        <td>{{ entry['asset_name'] }}</td>
-        <td>{{ entry['created_at'] }}</td>
-        <td>{{ entry['path'] }}</td>
+        <td>{{ entry.user_email }}</td>
+        <td>{{ entry.action_type }}</td>
+        <td>{{ entry.asset_name }}</td>
+        <td>{{ entry.created_at }}</td>
         <td>
+          <a
+            href="{{ url_for('download_file_route', file_path=entry.path) }}"
+            download
+            >{{ entry.path }}</a
+          >
+        </td>
+        <td>
+          <a
+            href="{{ url_for('assignments', asset_path=entry.path) }}"
+            class="btn reassign-btn"
+            >Re-assign</a
+          >
+
           <button
             id="toggle-button-{{ entry.id }}"
             onclick="toggleComments('{{ entry.id }}')"
           >
             View Comments
           </button>
-
           <div id="comments-{{ entry['id'] }}" style="display: none">
-            <!-- Comments will be loaded here by JavaScript -->
-            <textarea id="new-comment-{{ entry['id'] }}"></textarea>
-            <button onclick="addComment('{{ entry.id }}')">Add Comment</button>
+            <!-- Comments will be loaded here -->
           </div>
         </td>
       </tr>

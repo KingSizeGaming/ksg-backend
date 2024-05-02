@@ -87,3 +87,28 @@ button:hover {
         font-size: 0.9em;
     }
 }
+
+/* Re-assign button specific styling */
+.reassign-btn {
+    background-color: #007bff; /* Primary blue color matching the header */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    margin-left: 10px; /* Space between this button and any other button */
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.reassign-btn:hover {
+    background-color: #0056b3; /* Darker blue on hover for interaction feedback */
+}
+
+/* Additional responsive design for buttons */
+@media (max-width: 768px) {
+    .reassign-btn, button {
+        width: 100%;
+        margin-top: 10px; /* Ensures consistent spacing in smaller screens */
+    }
+}
+

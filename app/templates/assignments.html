@@ -5,11 +5,23 @@
 />
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  function getUploadPath(assetPath) {
+    // Split the path by '/'
+    let pathParts = assetPath.split("/");
+    // Remove the last part of the path
+    pathParts.pop();
+    // Join the parts back into a string with '/'
+    return pathParts.join("/");
+  }
+
   function submitAssignment() {
+    const assetPath = document.getElementById("assetPath").value;
+    const uploadPath = getUploadPath(assetPath);
     const assignmentData = {
       assigned_to: document.getElementById("assignedTo").value,
       assigned_by: document.getElementById("assignedBy").value,
-      asset_path: document.getElementById("assetPath").value,
+      asset_path: assetPath,
+      upload_path: uploadPath,
       assignment_details: document.getElementById("details").value,
       to_be_completed_by: document.getElementById("completionDate").value,
       completed: false,
@@ -77,7 +89,7 @@
         <td>
           {% if not assignment.completed %}
           <form
-            action="{{ url_for('submit_assignment', assignment_id=assignment.id, asset_path=assignment.asset_path) }}"
+            action="{{ url_for('submit_assignment', assignment_id=assignment.id, asset_path=assignment.upload_path) }}"
             method="post"
             enctype="multipart/form-data"
           >
@@ -127,8 +139,9 @@
 
             <div class="mb-3">
               <label for="assetPath" class="form-label">Asset Path</label>
-              <input type="text" class="form-control" id="assetPath" />
-            </div>
+              <input type="text" class="form-control" id="assetPath" name="assetPath" value="{{ asset_path if asset_path else '' }}" />
+          </div>
+          
             <div class="mb-3">
               <label for="details" class="form-label">Assignment Details</label>
               <textarea class="form-control" id="details" rows="3"></textarea>

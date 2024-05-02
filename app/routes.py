@@ -29,7 +29,10 @@ from .services import (
     add_assignment_to_database,
     get_assignments,
     get_versions_info,
-    list_users
+    list_users,
+    get_assignment_by_id,
+    update_assignment_status,
+    list_folders_files,
 )
 from .models import User
 from werkzeug.utils import secure_filename
@@ -37,6 +40,7 @@ import os
 from supabase import create_client, Client
 from io import BytesIO
 from urllib.parse import unquote
+import dropbox
 
 
 def init_routes(app):
@@ -89,14 +93,20 @@ def init_routes(app):
         activity_log = get_activity_log(supabase)
         return render_template("dashboard.html", activity_log=activity_log)
 
-    @app.route("/assignments")
+    @app.route("/assignments", methods=["GET"])
+    @app.route("/assignments/<path:asset_path>", methods=["GET"])
     @login_required
-    def assignments():
+    def assignments(asset_path=None):
         supabase = get_supabase()
         assignments_data = get_assignments(supabase)
-        user_data = list_users()    
+        user_data = list_users()
 
-        return render_template("assignments.html", assignments=assignments_data, users=user_data)
+        return render_template(
+            "assignments.html",
+            assignments=assignments_data,
+            users=user_data,
+            asset_path=asset_path,
+        )
 
     @app.route("/get_comments/<string:activity_id>")
     def get_comments(activity_id):
@@ -129,14 +139,18 @@ def init_routes(app):
         if result["status"] == "error":
             return jsonify(result), 500
         return jsonify(result), 200
-    
-    @app.route("/submit_assignment/<int:assignment_id>/<path:asset_path>", methods=["POST"])
+
+    @app.route(
+        "/submit_assignment/<int:assignment_id>/<path:asset_path>", methods=["POST"]
+    )
     @login_required
     def submit_assignment(assignment_id, asset_path):
-        # assignment = get_assignment_by_id(assignment_id)
-        # if not assignment or assignment.completed:
-        #     flash("Invalid or already completed assignment.", "error")
-        #     return redirect(url_for("assignments"))
+        supabase = get_supabase()
+        assignment = get_assignment_by_id(supabase, assignment_id)
+        print(assignment)
+        if not assignment or assignment["completed"]:
+            flash("Invalid or already completed assignment.", "error")
+            return redirect(url_for("assignments"))
 
         uploaded_file = request.files.get("file")
         if uploaded_file and uploaded_file.filename:
@@ -147,12 +161,14 @@ def init_routes(app):
 
             uploaded_file.save(temp_file_path)
 
-            dropbox_file_path = f"/{asset_path}/{filename}"  # Construct full Dropbox path
+            dropbox_file_path = f"/{asset_path}"  # Construct full Dropbox path
             if dropbox_upload_file(temp_file_path, dropbox_file_path):
                 os.remove(temp_file_path)
-                # update_assignment_status(assignment_id, True)  # Set assignment as completed
+                update_assignment_status(
+                    supabase, assignment_id, True
+                )  # Set assignment as completed
                 print("Assignment submitted successfully.")
-                log_activity(get_supabase(), current_user.email, "upload", filename, dropbox_file_path)
+
             else:
                 os.remove(temp_file_path)
                 print("Error uploading file to Dropbox.")
@@ -303,6 +319,17 @@ def init_routes(app):
         logout_user()
         session.clear()  # Clear the session to remove any remaining data
         return redirect(url_for("index"))
+
+    @app.route("/explorer")
+    def explorer():
+        dbx = dropbox_connect()
+        return render_template("explorer.html", files=list_folders_files(dbx, ""))
+
+    @app.route("/folder")
+    def folder_contents():
+        path = request.args.get("path", "")
+        dbx = dropbox_connect()
+        return jsonify(list_folders_files(dbx, path))
 
     # @app.route('/register', methods=['GET', 'POST'])
     # def register():

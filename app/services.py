@@ -2,11 +2,14 @@
 import os
 from datetime import datetime
 import dropbox
-from config import Config  # This line is important
+from config import Config
 import pathlib
 from flask import current_app, send_file, flash
 from supabase import create_client, Client
 from io import BytesIO
+import re
+from dropbox.exceptions import ApiError
+from flask_login import current_user
 
 
 def dropbox_connect():
@@ -73,15 +76,23 @@ def add_comment_to_activity(activity_id, user_email, comment):
 
 
 def add_assignment_to_database(
-    assigned_to, assigned_by, asset_path, assignment_details, to_be_completed_by
+    assigned_to,
+    assigned_by,
+    asset_path,
+    upload_path,
+    assignment_details,
+    to_be_completed_by,
+    completed,
 ):
     supabase = get_supabase()
     record = {
         "assigned_to": assigned_to,
         "assigned_by": assigned_by,
         "asset_path": asset_path,
+        "upload_path": upload_path,
         "details": assignment_details,
         "to_be_completed_by": to_be_completed_by,
+        "completed": completed,
     }
     try:
         response = supabase.table("assignments").insert(record).execute()
@@ -90,16 +101,16 @@ def add_assignment_to_database(
         return {"status": "success", "message": "Assignment added successfully"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
+
+
 def list_users():
     # Hardcoded list of user emails
     data = [
         "user1@kingsizegames.com",
         "user2@kingsizegames.com",
-        "user3@kingsizegames.com"
+        "user3@kingsizegames.com",
     ]
     return data
-
 
 
 def get_activity_log(supabase):
@@ -123,13 +134,45 @@ def get_assignments(supabase):
         response = (
             supabase.table("assignments")
             .select("*")
-            .order("to_be_completed_by", desc=True)
+            .order("to_be_completed_by", desc=False)
             .execute()
         )
         return response.data
     except Exception as e:
         flash(f"Error fetching assignments: {e}")
         return None
+
+
+def get_assignment_by_id(supabase, assignment_id):
+    """Fetches a specific assignment by ID from Supabase."""
+    try:
+        response = (
+            supabase.table("assignments")
+            .select("*")
+            .eq("id", assignment_id)
+            .single()
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        flash(f"Error fetching assignment: {e}")
+        return None
+
+
+def update_assignment_status(supabase, assignment_id, completed):
+
+    try:
+        # Update the assignment status to completed
+        response = (
+            supabase.table("assignments")
+            .update({"completed": True})
+            .eq("id", assignment_id)
+            .execute()
+        )
+
+        print("Assignment status updated successfully.")
+    except Exception as e:
+        print(f"Error updating assignment status: {str(e)}")
 
 
 def get_comments_by_activity_id(supabase, activity_id):
@@ -149,56 +192,46 @@ def get_comments_by_activity_id(supabase, activity_id):
 
 
 def dropbox_upload_file(local_file_path, dropbox_folder_path):
-    """Upload a file to Dropbox from a local path, with an attempt at versioning to avoid overwrites."""
+    """Upload a file to Dropbox from a local path, modifying the filename to include a new timestamp if an old one exists and removing numbers potentially appended after an underscore."""
     dbx = dropbox_connect()
-    timestamp = datetime.now().strftime("_%Y%m%d%H%M%S")  # For version control
-    # add a timestamp to the nd for versioning
-    file_name = pathlib.Path(local_file_path).stem
-    file_extension = pathlib.Path(local_file_path).suffix
-    versioned_file_name = f"{file_name}{timestamp}{file_extension}"
-    versioned_dropbox_path = f"{dropbox_folder_path}/{versioned_file_name}".replace(
-        "\\", "/"
-    )
-    CHUNK_SIZE = 8 * 1024 * 1024  # 8 MB chunk size
-    file_size = os.path.getsize(local_file_path)
+    print(f"Uploading {local_file_path} to Dropbox at {dropbox_folder_path}")
+    base_name = pathlib.Path(local_file_path).stem
+    extension = pathlib.Path(local_file_path).suffix
+
+    # Regex to remove numbers in parentheses at the end of the file name
+    # Updated to also remove underscore followed by one or more digits
+    modified_name_regex = re.compile(r"(_\d{14}_\d+|_\d+)$")
+    base_name = re.sub(modified_name_regex, "", base_name)
+
+    # New timestamp for version control
+    new_timestamp = datetime.now().strftime("_%Y%m%d%H%M%S")
+    base_name += new_timestamp
+
+    versioned_file_name = f"{base_name}{extension}"
+    versioned_dropbox_path = os.path.join(
+        dropbox_folder_path, versioned_file_name
+    ).replace("\\", "/")
+
     try:
         with open(local_file_path, "rb") as f:
-            if file_size <= CHUNK_SIZE:
-                # File is small enough to upload as a single chunk
-                meta = dbx.files_upload(
-                    f.read(), versioned_dropbox_path, mode=dropbox.files.WriteMode.add
-                )
-            else:
-                # Perform a chunked upload session
-                upload_session_start_result = dbx.files_upload_session_start(
-                    f.read(CHUNK_SIZE)
-                )
-                cursor = dropbox.files.UploadSessionCursor(
-                    session_id=upload_session_start_result.session_id, offset=f.tell()
-                )
-                commit = dropbox.files.CommitInfo(path=versioned_dropbox_path)
-
-                while f.tell() < file_size:
-                    if (file_size - f.tell()) <= CHUNK_SIZE:
-                        print(
-                            dbx.files_upload_session_finish(
-                                f.read(CHUNK_SIZE), cursor, commit
-                            )
-                        )
-                    else:
-                        dbx.files_upload_session_append_v2(f.read(CHUNK_SIZE), cursor)
-                        cursor.offset = f.tell()
-
-                meta = dbx.files_upload_session_finish(
-                    f.read(CHUNK_SIZE), cursor, commit
-                )
-
-            # st.success(f"File uploaded successfully to {versioned_dropbox_path}")
-            # log_activity(supabase.auth.get_user(st.session_state['token']).user.email, "upload", file_name)
-            return meta
-    except Exception as e:
-        # st.error(f"Error uploading file to Dropbox: {e}")
-        return None
+            file_data = f.read()
+            dbx.files_upload(
+                file_data, versioned_dropbox_path, mode=dropbox.files.WriteMode.add
+            )
+            print(
+                f"Uploaded {versioned_file_name} to Dropbox at {versioned_dropbox_path}"
+            )
+            log_activity(
+                get_supabase(),
+                current_user.email,
+                "upload",
+                versioned_file_name,
+                versioned_dropbox_path,
+            )
+            return True
+    except ApiError as e:
+        print(f"Dropbox API Error: {str(e)}")
+        return False
 
 
 def list_folders(dbx, path=""):
@@ -240,12 +273,26 @@ def download_file(dbx, file_path):
     except Exception as e:
         print(f"Failed to download file: {e}")
         return None
+
+
 def get_versions_info(dbx, path, game, asset):
     versions_paths = list_files(dbx, f"{path}/{game}/{asset}")
-    versions_info = [{
-        'filename': version_path.split('/')[-1],
-        'filepath': version_path,
-        'thumbnail_url': get_image_url(dbx, f"/{game}/{asset}/{version_path}")
-    } for version_path in versions_paths]
+    versions_info = [
+        {
+            "filename": version_path.split("/")[-1],
+            "filepath": version_path,
+            "thumbnail_url": get_image_url(dbx, f"/{game}/{asset}/{version_path}"),
+        }
+        for version_path in versions_paths
+    ]
     versions_info.reverse()  # Reverse to show newest first
     return versions_info
+
+def list_folders_files(dbx, path):
+    try:
+        response = dbx.files_list_folder(path)
+        items = [{'name': entry.name, 'path_lower': entry.path_lower, 'type': 'folder' if isinstance(entry, dropbox.files.FolderMetadata) else 'file'} for entry in response.entries]
+        return items
+    except dropbox.exceptions.ApiError as err:
+        print(f"API Error: {err}")
+        return []

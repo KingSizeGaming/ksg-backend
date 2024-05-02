@@ -1,8 +1,12 @@
 /* General Body Styling */
+html {
+    scroll-behavior: smooth;
+  }
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
+    overflow-y: auto;
 }
 
 /* Container Styling */
@@ -95,4 +99,14 @@ textarea {
 .small-text {
     font-size: 0.8em;
     color: #e0e0e0;
+}
+
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    overflow-y: auto;  /* Allows scrolling within the modal if the page is not scrolling */
 }
