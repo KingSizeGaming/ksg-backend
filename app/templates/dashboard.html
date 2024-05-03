@@ -5,6 +5,7 @@
   href="{{ url_for('static', filename='css/dashboard.css') }}"
 />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
 <script>
   $(document).ready(function () {
     // JavaScript and AJAX functions here
@@ -54,6 +55,33 @@
       });
     };
   });
+  function previewAsset(path) {
+    fetch(`/preview_asset?path=${encodeURIComponent(path)}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.url) {
+          const imgPreview = document.getElementById("imagePreview");
+          imgPreview.src = data.url;
+          showModal("previewModal"); // Show modal by ID
+        } else {
+          alert("Preview not available.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching preview:", error);
+        alert("Error fetching preview.");
+      });
+  }
+
+  function showModal(id) {
+    const modal = document.getElementById(id);
+    modal.style.display = "flex"; // Show the modal
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.style.display = "none"; // Hide the modal
+  }
 </script>
 {% endblock %} {% block title %} Dashboard - Art Asset Manager {% endblock %} {%
 block content %}
@@ -82,7 +110,10 @@ block content %}
         <td>{{ entry.asset_name }}</td>
         <td>{{ entry.created_at }}</td>
         <td>
-          <a href="/download_file_folder?path={{ entry.path | urlencode }}" download>
+          <a
+            href="/download_file_folder?path={{ entry.path | urlencode }}"
+            download
+          >
             {{ entry.path }}
           </a>
           >
@@ -93,6 +124,7 @@ block content %}
             class="btn reassign-btn"
             >Re-assign</a
           >
+          <button onclick="previewAsset('{{ entry.path }}')">Preview</button>
 
           <button
             id="toggle-button-{{ entry.id }}"
@@ -112,4 +144,35 @@ block content %}
   <p>No activity log entries found.</p>
   {% endif %}
 </section>
+<!-- Image Preview Modal -->
+<!-- Image Preview Modal -->
+<div id="previewModal" class="modal" onclick="closeModal('previewModal')">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="previewModalLabel">Asset Preview</h5>
+        <button
+          type="button"
+          class="btn-close"
+          onclick="closeModal('previewModal')"
+        >
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        <img id="imagePreview" src="" alt="Asset Preview" style="width: 100%" />
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="closeModal('previewModal')"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

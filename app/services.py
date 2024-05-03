@@ -20,6 +20,20 @@ def dropbox_connect():
     )
 
 
+def get_versions_info(dbx, path, game, asset):
+    versions_paths = list_files(dbx, f"{path}/{game}/{asset}")
+    versions_info = [
+        {
+            "filename": version_path.split("/")[-1],
+            "filepath": version_path,
+            "thumbnail_url": get_image_url(dbx, f"/{game}/{asset}/{version_path}"),
+        }
+        for version_path in versions_paths
+    ]
+    versions_info.reverse()  # Reverse to show newest first
+    return versions_info
+
+
 def get_image_url(dbx, file_path):
 
     full_path = f"/{file_path.lstrip('/')}"  # Ensure the path starts with '/'
@@ -43,9 +57,6 @@ def register_user(email, password):
     if error:
         return None, str(error)
     return user, None
-
-
-from flask import current_app, flash
 
 
 def log_activity(supabase, user_email, action_type, asset_name, path):
@@ -275,23 +286,21 @@ def download_file(dbx, file_path):
         return None
 
 
-def get_versions_info(dbx, path, game, asset):
-    versions_paths = list_files(dbx, f"{path}/{game}/{asset}")
-    versions_info = [
-        {
-            "filename": version_path.split("/")[-1],
-            "filepath": version_path,
-            "thumbnail_url": get_image_url(dbx, f"/{game}/{asset}/{version_path}"),
-        }
-        for version_path in versions_paths
-    ]
-    versions_info.reverse()  # Reverse to show newest first
-    return versions_info
-
 def list_folders_files(dbx, path):
     try:
         response = dbx.files_list_folder(path)
-        items = [{'name': entry.name, 'path_lower': entry.path_lower, 'type': 'folder' if isinstance(entry, dropbox.files.FolderMetadata) else 'file'} for entry in response.entries]
+        items = [
+            {
+                "name": entry.name,
+                "path_lower": entry.path_lower,
+                "type": (
+                    "folder"
+                    if isinstance(entry, dropbox.files.FolderMetadata)
+                    else "file"
+                ),
+            }
+            for entry in response.entries
+        ]
         return items
     except dropbox.exceptions.ApiError as err:
         print(f"API Error: {err}")

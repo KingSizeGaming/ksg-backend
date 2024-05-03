@@ -210,13 +210,13 @@ def init_routes(app):
 
                     if success:
                         print("File uploaded successfully.")
-                        log_activity(
-                            get_supabase(),
-                            current_user.email,
-                            "upload",
-                            filename,
-                            dropbox_file_path,
-                        )
+                        # log_activity(
+                        #     get_supabase(),
+                        #     current_user.email,
+                        #     "upload",
+                        #     filename,
+                        #     dropbox_file_path,
+                        # )
 
                     else:
                         print("Error uploading file to Dropbox.")
@@ -390,6 +390,18 @@ def init_routes(app):
         path = request.args.get("path", "")
         dbx = dropbox_connect()
         return jsonify(list_folders_files(dbx, path))
+    
+    @app.route('/preview_asset')
+    @login_required
+    def preview_asset():
+        file_path = request.args.get('path')
+        dbx = dropbox_connect()  # Ensure you have a Dropbox connection function
+        image_url = get_image_url(dbx, file_path)
+        if image_url:
+            return jsonify({'url': image_url})
+        else:
+            return jsonify({'error': 'Failed to get image URL'}), 404
+
 
     # @app.route('/register', methods=['GET', 'POST'])
     # def register():
