@@ -82,10 +82,9 @@ block content %}
         <td>{{ entry.asset_name }}</td>
         <td>{{ entry.created_at }}</td>
         <td>
-          <a
-            href="{{ url_for('download_file_route', file_path=entry.path) }}"
-            download
-            >{{ entry.path }}</a
+          <a href="/download_file_folder?path={{ entry.path | urlencode }}" download>
+            {{ entry.path }}
+          </a>
           >
         </td>
         <td>

@@ -163,7 +163,7 @@ def init_routes(app):
             uploaded_file.save(temp_file_path)
 
             # Decode the URL-encoded file path and ensure it starts with '/'
-            decoded_file_path =unquote(asset_path)
+            decoded_file_path = unquote(asset_path)
             dropbox_file_path = f"/{decoded_file_path}"  # Construct full Dropbox path
             if dropbox_upload_file(temp_file_path, dropbox_file_path):
                 os.remove(temp_file_path)
@@ -229,35 +229,58 @@ def init_routes(app):
 
         return render_template("upload.html", folder_options=folder_options)
 
-
-
-    @app.route("/download_file/<path:file_path>")
-    def download_file_route(file_path):
-        # Initialize Dropbox connection
+    @app.route("/download", methods=["GET", "POST"])
+    @login_required
+    def download():
+        path = ""  # Define your root Dropbox path
         dbx = dropbox_connect()
+        games = list_folders(dbx, path)
+        selected_game = request.form.get("game")
+        assets = list_folders(dbx, f"{path}/{selected_game}") if selected_game else []
+        selected_asset = request.form.get("asset") if "asset" in request.form else None
 
-        # Decode the URL-encoded file path and ensure it starts with '/'
-        decoded_file_path = "/" + unquote(file_path).lstrip("/")
-        print(f"Decoded file path: {decoded_file_path}")
+        versions_info = (
+            get_versions_info(dbx, path, selected_game, selected_asset)
+            if selected_asset
+            else []
+        )
 
-        # Attempt to download the file from Dropbox
-        try:
-            _, res = dbx.files_download(decoded_file_path)
-            if res.status_code == 200:
-                print("File downloaded successfully")
-                return send_file(
-                    BytesIO(res.content),
-                    as_attachment=True,
-                    download_name=os.path.basename(file_path),
-                    mimetype=None,  # Flask will guess the MIME type
-                )
+        return render_template(
+            "download.html",
+            games=games,
+            selected_game=selected_game,
+            assets=assets,
+            selected_asset=selected_asset,
+            versions=versions_info,
+        )
 
-            else:
-                print(f"Failed to download with status code: {res.status_code}")
-                return "File not found", 404
-        except Exception as e:
-            print(f"Failed to download file: {e}")
-            return f"An error occurred: {str(e)}", 500
+    # @app.route("/download_file/<path:file_path>")
+    # def download_file_route(file_path):
+    #     # Initialize Dropbox connection
+    #     dbx = dropbox_connect()
+
+    #     # Decode the URL-encoded file path and ensure it starts with '/'
+    #     decoded_file_path = "/" + unquote(file_path).lstrip("/")
+    #     print(f"Decoded file path: {decoded_file_path}")
+
+    #     # Attempt to download the file from Dropbox
+    #     try:
+    #         _, res = dbx.files_download(decoded_file_path)
+    #         if res.status_code == 200:
+    #             print("File downloaded successfully")
+    #             return send_file(
+    #                 BytesIO(res.content),
+    #                 as_attachment=True,
+    #                 download_name=os.path.basename(file_path),
+    #                 mimetype=None,  # Flask will guess the MIME type
+    #             )
+
+    #         else:
+    #             print(f"Failed to download with status code: {res.status_code}")
+    #             return "File not found", 404
+    #     except Exception as e:
+    #         print(f"Failed to download file: {e}")
+    #         return f"An error occurred: {str(e)}", 500
 
     @app.route("/download_file_folder")
     def download_route():
