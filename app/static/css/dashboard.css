@@ -167,5 +167,14 @@ tr:nth-child(even) {
   padding: 5px 0; /* Add some padding between comments */
 }
 
+/* CSS for highlighting */
+.attention-needed {
+  background-color: yellow;
+}
+
+.completed {
+  background-color: lightgreen;
+}
+
 
 

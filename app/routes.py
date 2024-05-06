@@ -33,6 +33,7 @@ from .services import (
     get_assignment_by_id,
     update_assignment_status,
     list_folders_files,
+    update_dashboard_status,
 )
 from .models import User
 from werkzeug.utils import secure_filename
@@ -92,7 +93,9 @@ def init_routes(app):
     def dashboard():
         supabase = get_supabase()
         activity_log = get_activity_log(supabase)
-        return render_template("dashboard.html", activity_log=activity_log)
+        attention_required = [log for log in activity_log if log["status"] == "Action Needed"]
+        completed = [log for log in activity_log if log["status"] == "Approved"]
+        return render_template("dashboard.html", activity_log=activity_log, attention_required=attention_required, completed=completed)
 
     @app.route("/assignments", methods=["GET"])
     @app.route("/assignments/<path:asset_path>", methods=["GET"])
@@ -140,6 +143,19 @@ def init_routes(app):
         if result["status"] == "error":
             return jsonify(result), 500
         return jsonify(result), 200
+    
+    @app.route('/approve_asset/<int:id>', methods=['POST'])
+    def approve_asset(id):
+        supabase = get_supabase()
+        if request.method == 'POST':
+            # Call the helper function to update the status
+            update_dashboard_status(supabase, id)
+
+            return jsonify({'message': 'Asset approved successfully'})
+        else:
+            return jsonify({'error': 'Invalid request method'}) 
+
+
 
     @app.route(
         "/submit_assignment/<int:assignment_id>/<path:asset_path>", methods=["POST"]

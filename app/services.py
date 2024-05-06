@@ -169,6 +169,21 @@ def get_assignment_by_id(supabase, assignment_id):
     except Exception as e:
         flash(f"Error fetching assignment: {e}")
         return None
+    
+def update_dashboard_status(supabase, id):
+
+    try:
+        # Update the assignment status to completed
+        response = (
+            supabase.table("activity_log")
+            .update({"status": "Approved"})
+            .eq("id", id)
+            .execute()
+        )
+
+        print("Entry status updated successfully.")
+    except Exception as e:
+        print(f"Error updating entry status: {str(e)}")
 
 
 def update_assignment_status(supabase, assignment_id, completed):
