@@ -214,7 +214,7 @@ block content %}
       {% for entry in completed %}
       <tr>
 
-        <td class="{% if entry.status == 'Action Needed' %} attention-needed {% elif entry.status == 'Completed' %} completed {% endif %}">{{ entry.status }}</td>
+        <td class="{% if entry.status == 'Action Needed' %} attention-needed {% elif entry.status == 'Approved' %} completed {% endif %}">{{ entry.status }}</td>
         <td>{{ entry.user_email }}</td>
         <td>{{ entry.action_type }}</td>
         <td>{{ entry.asset_name }}</td>
