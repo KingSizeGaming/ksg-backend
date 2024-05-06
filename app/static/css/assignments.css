@@ -1,114 +1,121 @@
 /* General Body Styling */
 html {
-    scroll-behavior: smooth;
-  }
+  scroll-behavior: smooth;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    overflow-y: auto;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  overflow-y: auto;
 }
 
 /* Container Styling */
 .container {
-    background: white;
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Headers */
 h2 {
-    color: #2c3e50;
-    text-align: center;
+  color: #2c3e50;
+  text-align: center;
 }
 
 /* Table Styling */
 table {
-    width: 100%;
-    margin-top: 20px;
-    max-width: 100%;
-    border-collapse: collapse;
+  width: 100%;
+  margin-top: 20px;
+  max-width: 100%;
+  border-collapse: collapse;
 }
 
-th, td {
-    text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-    text-wrap: wrap;
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  text-wrap: wrap;
 }
 
 th {
-    background-color: #4CAF50;
-    color: white;
+  background-color: #4caf50;
+  color: white;
 }
 
 /* Buttons */
 button {
-    background-color: #5cb85c; /* Green */
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    float: right;
-    margin-bottom: 10px;
+  background-color: #5cb85c; /* Green */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  float: right;
+  margin-bottom: 10px;
 }
 
 button:hover {
-    background-color: #45a049;
+  background-color: #45a049;
 }
 
 /* Modal Styling */
+.modal {
+  display: block; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto; /* 15% from the top and centered */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-    box-shadow: 0 5px 15px rgba(0,0,0,.5);
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 /* Form Styling */
 .form-control {
-    width: 100%;
-    padding: 12px 20px;
-    margin: 8px 0;
-    display: inline-block;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
 label {
-    margin-bottom: 10px;
-    display: block;
+  margin-bottom: 10px;
+  display: block;
 }
 
 textarea {
-    resize: vertical; /* Allow vertical resize */
-}
-
-/* Footer Button Placement */
-.modal-footer {
-    background-color: #f4f4f4;
-    border-top: 1px solid #e5e5e5;
-    padding-top: 10px;
-    text-align: right; /* Aligns buttons to the right */
-}
-
-.small-text {
-    font-size: 0.8em;
-    color: #e0e0e0;
-}
-
-.modal-dialog {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal {
-    overflow-y: auto;  /* Allows scrolling within the modal if the page is not scrolling */
+  resize: vertical; /* Allow vertical resize */
 }

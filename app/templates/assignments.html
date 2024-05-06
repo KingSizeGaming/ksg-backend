@@ -3,7 +3,6 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/assignments.css') }}"
 />
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   function getUploadPath(assetPath) {
     // Split the path by '/'
@@ -83,10 +82,8 @@
           >
             {{ assignment.asset_path }}
           </a>
-
           >
         </td>
-
         <td>{{ assignment.details }}</td>
         <td>{{ assignment.to_be_completed_by }}</td>
         <td>
@@ -114,74 +111,97 @@
     aria-labelledby="assignmentModalLabel"
     aria-hidden="true"
   >
-    <div class="modal-dialog">
+    <div id="assignmentModal" class="modal">
       <div class="modal-content">
-        <div class="modal-header"></div>
-        <div class="modal-body">
-          <form id="assignmentForm">
-            <div class="mb-3">
-              <label for="assignedTo" class="form-label">Assigned To</label>
-              <select class="form-control" id="assignedTo" name="assignedTo">
-                {% for user in users %}
-                <option value="{{ user }}">{{ user }}</option>
-                {% endfor %}
-              </select>
-            </div>
+        <span class="close">&times;</span>
+        <h3>Add Assignment</h3>
+        <form id="assignmentForm">
+          <div class="mb-3">
+            <label for="assignedTo" class="form-label">Assigned To</label>
+            <select class="form-control" id="assignedTo" name="assignedTo">
+              {% for user in users %}
+              <option value="{{ user }}">{{ user }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-            <div class="mb-3">
-              <label for="assignedBy" class="form-label">Assigned By</label>
-              <input
-                type="text"
-                class="form-control"
-                id="assignedBy"
-                name="assignedBy"
-                value="{{ current_user.email }}"
-                readonly
-              />
-            </div>
+          <div class="mb-3">
+            <label for="assignedBy" class="form-label">Assigned By</label>
+            <input
+              type="text"
+              class="form-control"
+              id="assignedBy"
+              name="assignedBy"
+              value="{{ current_user.email }}"
+              readonly
+            />
+          </div>
 
-            <div class="mb-3">
-              <label for="assetPath" class="form-label">Asset Path</label>
-              <input
-                type="text"
-                class="form-control"
-                id="assetPath"
-                name="assetPath"
-                value="{{ asset_path if asset_path else '' }}"
-              />
-            </div>
+          <div class="mb-3">
+            <label for="assetPath" class="form-label">Asset Path</label>
+            <input
+              type="text"
+              class="form-control"
+              id="assetPath"
+              name="assetPath"
+              value="{{ asset_path if asset_path else '' }}"
+            />
+          </div>
 
-            <div class="mb-3">
-              <label for="details" class="form-label">Assignment Details</label>
-              <textarea class="form-control" id="details" rows="3"></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="completionDate" class="form-label"
-                >To Be Completed By</label
-              >
-              <input type="date" class="form-control" id="completionDate" />
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick="submitAssignment()"
-          >
-            Save changes
-          </button>
-        </div>
+          <div class="mb-3">
+            <label for="details" class="form-label">Assignment Details</label>
+            <textarea class="form-control" id="details" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="completionDate" class="form-label"
+              >To Be Completed By</label
+            >
+            <input type="date" class="form-control" id="completionDate" />
+          </div>
+        </form>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="submitAssignment()"
+        >
+          Submit
+        </button>
       </div>
+
+      <div class="modal-footer"></div>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get the modal
+    var modal = document.getElementById("assignmentModal");
+
+    // Get the button that opens the modal
+    var btn = document.querySelector('[data-bs-target="#assignmentModal"]');
+
+    // Get the <span> element that closes the modal
+    var span = document.querySelector(".modal-content .close");
+
+    // When the user clicks the button, open the modal
+    btn.onclick = function () {
+      modal.style.display = "block";
+    };
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+      modal.style.display = "none";
+    };
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+  });
+</script>
 
 {% endblock %}

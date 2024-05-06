@@ -1,15 +1,14 @@
 /* General Body Styling */
 html {
-    scroll-behavior: smooth;
-  }
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
-
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  overflow-y: auto;
+}
 
 /* Main Content Area */
 .content {
@@ -25,13 +24,14 @@ table {
   table-layout: fixed;
 }
 
-th, td {
-    text-align: left;
-    padding: 8px;
-    overflow: hidden;
-
-    white-space: wrap
-  }
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  overflow: hidden;
+  white-space: wrap;
+  word-wrap: break-word;
+}
 
 th {
   background-color: #2980b9; /* Darker background for headers */
@@ -44,22 +44,8 @@ tr:nth-child(even) {
 }
 
 /* Buttons and Interactive Elements */
-.btn {
-  background-color: #3498db; /* Vibrant blue for buttons */
-  color: #ffffff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px; /* Rounded corners for buttons */
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
 .btn:hover {
   background-color: #2980b9; /* A slightly darker blue on hover */
-}
-
-.btn.reassign-btn {
-  background-color: #e67e22; /* A different color for specific actions */
 }
 
 .btn.reassign-btn:hover {
@@ -69,90 +55,117 @@ tr:nth-child(even) {
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
   .btn {
-    padding: 8px 16px; /* Slightly smaller buttons on smaller screens */
-    font-size: 0.9em; /* Smaller font size for button text */
+      padding: 8px 16px; /* Slightly smaller buttons on smaller screens */
+      font-size: 0.9em; /* Smaller font size for button text */
   }
 }
 
 #previewModal .modal-dialog {
-    max-width: 90%; /* Limits the maximum width to 90% of the viewport */
-    margin: 1.75rem auto;
+  max-width: 90%; /* Limits the maximum width to 90% of the viewport */
+  margin: 1.75rem auto;
 }
 
 #previewModal .modal-body img {
-    max-height: 80vh; /* Limits image height to 80% of the viewport height */
-    width: auto; /* Maintains aspect ratio */
-    display: block; /* Removes the need to toggle display property in JS */
-    margin: 0 auto; /* Centers the image */
+  max-height: 80vh; /* Limits image height to 80% of the viewport height */
+  min-height: 80vh;
+  width: auto; /* Maintains aspect ratio */
+  display: block; /* Removes the need to toggle display property in JS */
+  margin: 0 auto; /* Centers the image */
 }
 
 #previewModal {
-    display: none; /* Ensures the modal is not visible until explicitly shown */
+  display: none; /* Ensures the modal is not visible until explicitly shown */
 }
 
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none; /* Modal is hidden by default */
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-    z-index: 1050; /* High z-index to ensure it's on top */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none; /* Modal is hidden by default */
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  z-index: 1050; /* High z-index to ensure it's on top */
 }
 
 .modal-dialog {
-    position: relative;
-    width: auto;
-    max-width: 600px; /* Max modal width */
-    margin: 20px;
-    pointer-events: none; /* Ensures that clicking the modal does not close it */
+  position: relative;
+  width: auto;
+  max-width: 600px; /* Max modal width */
+  margin: 20px;
+  pointer-events: none; /* Ensures that clicking the modal does not close it */
 }
 
 .modal-content {
-    position: relative;
-    pointer-events: auto; /* Ensures the modal content can be interacted with */
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #999;
-    border-radius: 8px;
-    outline: 0;
-    box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5);
+  position: relative;
+  pointer-events: auto; /* Ensures the modal content can be interacted with */
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #999;
+  border-radius: 8px;
+  outline: 0;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5);
 }
 
 .modal-body {
-    padding: 20px;
+  padding: 20px;
 }
 
 .modal-header,
 .modal-footer {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .modal-footer {
-    border-top: none;
-    border-bottom: 0;
-    justify-content: flex-end;
+  border-top: none;
+  border-bottom: 0;
+  justify-content: flex-end;
 }
 
 .modal-header {
-    border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .modal-title {
-    margin-bottom: 0;
-    line-height: 1.5;
+  margin-bottom: 0;
+  line-height: 1.5;
 }
 
 .btn-close {
-    border: none;
-    background: none;
-    font-size: 24px;
-    cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 24px;
+  cursor: pointer;
 }
+
+/* Additional Styles for Image Preview and Comments */
+.preview-container {
+  display: flex;
+}
+
+.image-preview {
+  flex: 1;
+}
+
+.image-preview img {
+  width: 100%;
+}
+
+.comments-section {
+  max-width: 400px; /* Adjust the maximum width as needed */
+  word-wrap: break-word; /* Allow long words to be broken and wrap to the next line */
+  padding-left: 20px; /* Add some padding to the comments section */
+}
+
+.comments-section p {
+  margin: 0; /* Remove default margin for paragraphs */
+  padding: 5px 0; /* Add some padding between comments */
+}
+
+
 

@@ -59,9 +59,10 @@ def register_user(email, password):
     return user, None
 
 
-def log_activity(supabase, user_email, action_type, asset_name, path):
+def log_activity(status, supabase, user_email, action_type, asset_name, path):
     """Logs user activity to the Supabase table."""
     record = {
+        "status": status,
         "user_email": user_email,
         "action_type": action_type,
         "asset_name": asset_name,
@@ -233,6 +234,7 @@ def dropbox_upload_file(local_file_path, dropbox_folder_path):
                 f"Uploaded {versioned_file_name} to Dropbox at {versioned_dropbox_path}"
             )
             log_activity(
+                "Action Needed",
                 get_supabase(),
                 current_user.email,
                 "upload",

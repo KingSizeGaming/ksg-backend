@@ -201,7 +201,7 @@ def init_routes(app):
                 )  # Save the file to the temporary directory
 
                 if selected_folder in folder_options:
-                    dropbox_file_path = f"/{selected_folder}/{filename}"
+                    dropbox_file_path = f"/{selected_folder}"
                     success = dropbox_upload_file(temp_file_path, dropbox_file_path)
 
                     os.remove(
