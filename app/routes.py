@@ -34,6 +34,9 @@ from .services import (
     update_assignment_status,
     list_folders_files,
     update_dashboard_status,
+    download_folder_as_zip,
+    process_and_upload_file,
+    process_and_upload_folder,
 )
 from .models import User
 from werkzeug.utils import secure_filename
@@ -43,6 +46,7 @@ from io import BytesIO
 from urllib.parse import unquote
 import dropbox
 import zipfile
+from datetime import datetime
 
 
 def init_routes(app):
@@ -54,48 +58,55 @@ def init_routes(app):
     def login():
         return render_template("login.html")
 
-    @app.route("/register", methods=["GET", "POST"])
-    def register():
-        supabase = get_supabase()
-        if request.method == "POST":
-            password = request.form.get("password")
-            confirm_password = request.form.get("confirmPassword")
-            token = request.form.get("registrationToken")
-            print(token)
+    # @app.route("/register", methods=["GET", "POST"])
+    # def register():
+    #     supabase = get_supabase()
+    #     if request.method == "POST":
+    #         password = request.form.get("password")
+    #         confirm_password = request.form.get("confirmPassword")
+    #         token = request.form.get("registrationToken")
+    #         print(token)
 
-            if password != confirm_password:
-                flash("Passwords do not match!", "error")
-                return redirect(url_for("register"))
+    #         if password != confirm_password:
+    #             flash("Passwords do not match!", "error")
+    #             return redirect(url_for("register"))
 
-            if not token:
-                flash("No registration token provided!", "error")
-                return redirect(url_for("register"))
+    #         if not token:
+    #             flash("No registration token provided!", "error")
+    #             return redirect(url_for("register"))
 
-            try:
+    #         try:
 
-                result = supabase.auth.sign_up(email=None, password=password)
-                if result.error:
-                    flash(f"Registration failed: {result.error.message}", "error")
-                    return redirect(url_for("register"))
-                flash("Registration successful!", "success")
-                return redirect(
-                    url_for("login")
-                )  # Redirect to login page after successful registration
-            except Exception as e:
-                flash(f"An error occurred: {str(e)}", "error")
-                return redirect(url_for("register"))
+    #             result = supabase.auth.sign_up(email=None, password=password)
+    #             if result.error:
+    #                 flash(f"Registration failed: {result.error.message}", "error")
+    #                 return redirect(url_for("register"))
+    #             flash("Registration successful!", "success")
+    #             return redirect(
+    #                 url_for("login")
+    #             )  # Redirect to login page after successful registration
+    #         except Exception as e:
+    #             flash(f"An error occurred: {str(e)}", "error")
+    #             return redirect(url_for("register"))
 
-        # Serve the registration page
-        return render_template("register.html")
+    #     # Serve the registration page
+    #     return render_template("register.html")
 
     @app.route("/dashboard")
     @login_required
     def dashboard():
         supabase = get_supabase()
         activity_log = get_activity_log(supabase)
-        attention_required = [log for log in activity_log if log["status"] == "Action Needed"]
+        attention_required = [
+            log for log in activity_log if log["status"] == "Action Needed"
+        ]
         completed = [log for log in activity_log if log["status"] == "Approved"]
-        return render_template("dashboard.html", activity_log=activity_log, attention_required=attention_required, completed=completed)
+        return render_template(
+            "dashboard.html",
+            activity_log=activity_log,
+            attention_required=attention_required,
+            completed=completed,
+        )
 
     @app.route("/assignments", methods=["GET"])
     @app.route("/assignments/<path:asset_path>", methods=["GET"])
@@ -117,6 +128,7 @@ def init_routes(app):
 
         supabase = get_supabase()
         comments = get_comments_by_activity_id(supabase, activity_id)
+        print(comments)
         return jsonify(comments)
 
     @app.route("/add_comment", methods=["POST"])
@@ -124,13 +136,17 @@ def init_routes(app):
         data = request.get_json()
         if not data:
             return jsonify({"status": "error", "message": "No data provided"}), 400
-
+        print(data)
         activity_id = data.get("activity_log_id")
         comment = data.get("comment")
-        user_email = current_user.email  # Make sure current_user is authenticated
+        user_email = current_user.email
 
-        response = add_comment_to_activity(activity_id, user_email, comment)
-        return jsonify(response), 200
+        try:
+            response = add_comment_to_activity(activity_id, user_email, comment)
+            return jsonify(response), 200
+        except Exception as e:
+            print(f"Error adding comment: {e}")
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     @app.route("/add_assignment", methods=["POST"])
     @login_required
@@ -143,19 +159,17 @@ def init_routes(app):
         if result["status"] == "error":
             return jsonify(result), 500
         return jsonify(result), 200
-    
-    @app.route('/approve_asset/<int:id>', methods=['POST'])
+
+    @app.route("/approve_asset/<int:id>", methods=["POST"])
     def approve_asset(id):
         supabase = get_supabase()
-        if request.method == 'POST':
+        if request.method == "POST":
             # Call the helper function to update the status
             update_dashboard_status(supabase, id)
 
-            return jsonify({'message': 'Asset approved successfully'})
+            return jsonify({"message": "Asset approved successfully"})
         else:
-            return jsonify({'error': 'Invalid request method'}) 
-
-
+            return jsonify({"error": "Invalid request method"})
 
     @app.route(
         "/submit_assignment/<int:assignment_id>/<path:asset_path>", methods=["POST"]
@@ -201,49 +215,37 @@ def init_routes(app):
     def upload_file():
         dbx = dropbox_connect()
         folder_options = list_folders(dbx)
-
+    
         if request.method == "POST":
-            uploaded_file = request.files.get("file")
+            files = request.files.getlist("file")
+            directory_files = request.files.getlist("directory")
             selected_folder = request.form.get("folder")
-
-            if uploaded_file and uploaded_file.filename:
-                filename = secure_filename(uploaded_file.filename)
-                temp_dir = os.path.join(current_app.root_path, "temp")
-                os.makedirs(temp_dir, exist_ok=True)  # Ensure the directory exists
-                temp_file_path = os.path.join(temp_dir, filename)
-
-                uploaded_file.save(
-                    temp_file_path
-                )  # Save the file to the temporary directory
-
-                if selected_folder in folder_options:
-                    dropbox_file_path = f"/{selected_folder}"
-                    success = dropbox_upload_file(temp_file_path, dropbox_file_path)
-
-                    os.remove(
-                        temp_file_path
-                    )  # Clean up the temporary file after upload
-
-                    if success:
-                        print("File uploaded successfully.")
-                        # log_activity(
-                        #     get_supabase(),
-                        #     current_user.email,
-                        #     "upload",
-                        #     filename,
-                        #     dropbox_file_path,
-                        # )
-
-                    else:
-                        print("Error uploading file to Dropbox.")
-                else:
-                    flash("Invalid folder selected.", "error")
+    
+            if not files and not directory_files:
+                return jsonify({'message': 'No files were uploaded.'}), 400
+    
+            # Ensure we process files and directories separately
+            any_files_uploaded = False
+    
+            # Process single files
+            if files and files[0].filename:
+                any_files_uploaded = True
+                for uploaded_file in files:
+                    process_and_upload_file(uploaded_file, selected_folder, folder_options, dbx)
+    
+            # Process directory files
+            if directory_files and directory_files[0].filename:
+                any_files_uploaded = True
+                process_and_upload_folder(directory_files, selected_folder, folder_options, dbx)
+    
+            if any_files_uploaded:
+                return render_template("upload_success.html", message='Files uploaded successfully.')
             else:
-                flash("No file was uploaded.", "error")
-
-            return redirect(url_for("upload_file"))
-
+                return jsonify({'message': 'No files were processed.'}), 400
+    
         return render_template("upload.html", folder_options=folder_options)
+    
+
 
     @app.route("/download", methods=["GET", "POST"])
     @login_required
@@ -300,54 +302,21 @@ def init_routes(app):
 
     @app.route("/download_file_folder")
     def download_route():
-        dbx = (
-            dropbox_connect()
-        )  # Ensure you have a function to handle Dropbox connection
         path = request.args.get("path")
         if not path:
             return "No path provided", 400
 
-        decoded_path = "/" + unquote(path).lstrip(
-            "/"
-        )  # Ensure the path is correctly formatted
+        dbx = dropbox_connect()
+        decoded_path = "/" + unquote(path).lstrip("/")
 
         try:
-            # Check if the path is for a file or a folder
             metadata = dbx.files_get_metadata(decoded_path)
             if isinstance(metadata, dropbox.files.FileMetadata):
-                # It's a file, download it
-                _, res = dbx.files_download(decoded_path)
-                if res.status_code == 200:
-                    print("File downloaded successfully")
-                    return send_file(
-                        BytesIO(res.content),
-                        as_attachment=True,
-                        download_name=os.path.basename(decoded_path),
-                        mimetype=None,  # Flask will guess the MIME type
-                    )
-                else:
-                    print(
-                        f"Failed to download file with status code: {res.status_code}"
-                    )
-                    return "File not found", 404
+                return download_file(dbx, decoded_path)
             elif isinstance(metadata, dropbox.files.FolderMetadata):
-                # It's a folder, download as zip
-                _, res = dbx.files_download_zip(decoded_path)
-                if res.status_code == 200:
-                    print("Folder downloaded successfully as zip")
-                    zip_buffer = BytesIO(res.content)
-                    zip_buffer.seek(0)
-                    return send_file(
-                        zip_buffer,
-                        as_attachment=True,
-                        download_name=f"{metadata.name}.zip",
-                        mimetype="application/zip",
-                    )
-                else:
-                    print(
-                        f"Failed to download folder with status code: {res.status_code}"
-                    )
-                    return "Folder not found", 404
+                return download_folder_as_zip(dbx, decoded_path, metadata.name)
+            else:
+                return "Unsupported metadata type", 400
         except dropbox.exceptions.ApiError as e:
             print(f"Dropbox API error: {e}")
             return f"An error occurred with Dropbox API: {str(e)}", 500
@@ -406,28 +375,48 @@ def init_routes(app):
         path = request.args.get("path", "")
         dbx = dropbox_connect()
         return jsonify(list_folders_files(dbx, path))
-    
-    @app.route('/preview_asset')
+
+    @app.route("/preview_asset")
     @login_required
     def preview_asset():
-        file_path = request.args.get('path')
-        dbx = dropbox_connect()  # Ensure you have a Dropbox connection function
+        file_path = request.args.get("path")
+        if not file_path:
+            return jsonify({"error": "Path parameter is required"}), 400
+
+        dbx = dropbox_connect()
         image_url = get_image_url(dbx, file_path)
         if image_url:
-            return jsonify({'url': image_url})
+            return jsonify({"url": image_url})
         else:
-            return jsonify({'error': 'Failed to get image URL'}), 404
+            return jsonify({"error": "Failed to get image URL"}), 404
 
+    @app.route("/reset")
+    def reset_password_form():
+        token = request.args.get("token")
+        return render_template("reset.html", token=token)
 
-    # @app.route('/register', methods=['GET', 'POST'])
-    # def register():
-    #     if request.method == 'POST':
-    #         email = request.form['email']
-    #         password = request.form['password']
-    #         user, error = register_user(email, password)
-    #         if error:
-    #             flash(error)
-    #         else:
-    #             flash('Registration successful! Please log in.')
-    #             return redirect(url_for('login'))
-    #     return render_template('register.html')
+    @app.route("/submit-new-password", methods=["POST"])
+    def submit_new_password():
+        token = request.form["token"]
+        new_password = request.form["password"]
+        confirm_password = request.form["confirmPassword"]
+        supabase = get_supabase()
+
+        if new_password != confirm_password:
+            flash("Passwords do not match!", "error")
+            return redirect(url_for("reset"))
+
+        try:
+            # Update the password using the Supabase token
+            response = supabase.auth.update_user(token, {"password": new_password})
+            if response["error"]:
+                flash(response["error"]["message"], "error")
+                return redirect(url_for("reset"))
+
+            flash("Password reset successful!", "success")
+            return redirect(
+                url_for("login")
+            )  # Redirect to login page or wherever appropriate
+        except Exception as e:
+            flash(str(e), "error")
+            return redirect(url_for("reset"))

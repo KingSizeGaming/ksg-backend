@@ -1,24 +1,39 @@
 {% extends 'base.html' %}
 
 {% block head %}
-    {{ super() }}  <!-- Retains everything from the base template's head block -->
+    {{ super() }} <!-- Retains everything from the base template's head block -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/upload.css') }}">
 {% endblock %}
+
 {% block content %}
-    <h1>Upload a File to Dropbox</h1>
-    <form method="post" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
-        <label for="folder">Choose a folder to upload to:</label>
-        <select name="folder" id="folder">
-            {% for folder in folder_options %}
-            <option value="{{ folder }}">{{ folder }}</option>
-            {% endfor %}
-        </select>
-        <input type="file" name="file" required>
-        <input type="submit" value="Upload">
+<div class="container">
+    <h2>Upload Art Assets</h2>
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form id="upload-form" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="folder" class="form-label">Select Folder:</label>
+            <select class="form-control" id="folder" name="folder">
+                {% for folder in folder_options %}
+                <option value="{{ folder }}">{{ folder }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="file" class="form-label">Upload single file:</label>
+            <input type="file" class="form-control" id="file" name="file" multiple>
+        </div>
+        <div class="form-group">
+            <label for="directory" class="form-label">Upload Folder:</label>
+            <input type="file" class="form-control" id="directory" name="directory" webkitdirectory multiple>
+        </div>
+        <button type="submit" class="btn">Upload</button>
     </form>
-    {% endblock %}
+</div>
+{% endblock %}
 
-
-
-
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
 

@@ -1,120 +1,12 @@
-{% extends 'base.html' %} {% block head %} {{ super() }}
-<!-- Retains everything from the base template's head block -->
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/dashboard.css') }}"
-/>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-<script>
-  function previewAsset(path, activityId) {
-    fetch(`/preview_asset?path=${encodeURIComponent(path)}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.url) {
-          const imgPreview = document.getElementById("imagePreview");
-          imgPreview.src = data.url;
-
-          // Fetch comments for the file using the provided ID
-          fetch(`/get_comments/${activityId}`)
-            .then((response) => response.json())
-            .then((comments) => {
-              const commentsDiv = document.getElementById("comments");
-              if (comments.length > 0) {
-                let commentsContent = "<h3>Comments:</h3>";
-                comments.forEach((comment) => {
-                  commentsContent += `<p>${comment.author}: ${
-                    comment.comment
-                  } - ${new Date(comment.created_at).toLocaleString()}</p>`;
-                });
-                commentsDiv.innerHTML = commentsContent;
-              } else {
-                commentsDiv.innerHTML = "<p>No comments for this file.</p>";
-              }
-            })
-            .catch((error) => {
-              console.error("Error fetching comments:", error);
-            });
-
-          showModal("previewModal"); // Show modal by ID
-        } else {
-          const modalBody = document.querySelector("#previewModal .modal-body");
-          modalBody.innerHTML = "This file type cannot be previewed.";
-          showModal("previewModal"); // Show modal with message
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching preview:", error);
-        alert("Error fetching preview.");
-      });
-
-    // Function to add a comment
-    window.addComment = function () {
-      var commentText = $("#new-comment").val(); // Get the comment from the textarea
-      fetch("/add_comment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          activity_log_id: activityId,
-          comment: commentText,
-        }),
-      }).then(() => {
-        // After adding the comment, reload the comments section in the modal for the specific entry
-        fetch(`/get_comments/${activityId}`)
-          .then((response) => response.json())
-          .then((comments) => {
-            const commentsDiv = document.getElementById("comments");
-            if (comments.length > 0) {
-              let commentsContent = "<h3>Comments:</h3>";
-              comments.forEach((comment) => {
-                commentsContent += `<p>${comment.author}: ${
-                  comment.comment
-                } - ${new Date(comment.created_at).toLocaleString()}</p>`;
-              });
-              commentsDiv.innerHTML = commentsContent;
-            } else {
-              commentsDiv.innerHTML = "<p>No comments for this file.</p>";
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching comments:", error);
-          });
-      });
-    };
-  }
-  function approveAsset(id) {
-    // Make a POST request to the Flask route
-    fetch(`/approve_asset/${id}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Handle the response, maybe show a message or update the UI
-        console.log(data);
-        location.reload();
-        // Reload the page or update the UI as needed
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-
-  function showModal(id) {
-    const modal = document.getElementById(id);
-    modal.style.display = "flex"; // Show the modal
-  }
-
-  function closeModal(id) {
-    const modal = document.getElementById(id);
-    modal.style.display = "none"; // Hide the modal
-  }
-</script>
-{% endblock %} {% block title %} Dashboard - Art Asset Manager {% endblock %} {%
-block content %}
+{% extends 'base.html' %} 
+{% block head %} 
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %} 
+{% block title %} Dashboard - Art Asset Manager {% endblock %} 
+{% block content %}
 <div class="header">
   <h1>Dashboard</h1>
 </div>
@@ -136,61 +28,36 @@ block content %}
     <tbody>
       {% for entry in attention_required %}
       <tr>
-
         <td class="{% if entry.status == 'Action Needed' %} attention-needed {% elif entry.status == 'Completed' %} completed {% endif %}">{{ entry.status }}</td>
         <td>{{ entry.user_email }}</td>
         <td>{{ entry.action_type }}</td>
         <td>{{ entry.asset_name }}</td>
         <td>{{ entry.created_at }}</td>
         <td>
-          <a
-            href="/download_file_folder?path={{ entry.path | urlencode }}"
-            download
-          >
-            {{ entry.path }}
-          </a>
-          >
+          <a href="/download_file_folder?path={{ entry.path | urlencode }}" download>{{ entry.path }}</a>
         </td>
         <td>
           <div>
-            <button>
-              <a
-                href="{{ url_for('assignments', asset_path=entry.path) }}"
-                class="btn reassign-btn"
-                >Re-assign</a
-              >
+            <button class="btn reassign-btn">
+              <a href="{{ url_for('assignments', asset_path=entry.path) }}">Re-assign</a>
             </button>
           </div>
           <div>
-            <button
-              onclick="previewAsset('{{ entry.path }}', '{{ entry.id }}')"
-            >
-              Preview
+            <button class="btn preview-btn" onclick="previewAsset('{{ entry.path }}', '{{ entry.id }}')">Preview</button>
+          </div>
+          <div>
+            <button class="btn view-dropbox-btn">
+              <a href="https://www.dropbox.com/home/Apps/KingSizeGamesAssetManager/{{ entry.path }}">View in Dropbox</a>
             </button>
           </div>
           <div>
-            <button>
-              <a
-                href="https://www.dropbox.com/home/Apps/KingSizeGamesAssetManager/{{ entry.path }}"
-                class="btn view-dropbox-btn"
-                >View in Dropbox</a
-              >
-            </button>
+            <button class="btn approve-btn" onclick="approveAsset('{{ entry.id }}')">Approve Asset</button>
           </div>
-          <div>
-
-          </div>
-       
-            <button onclick="approveAsset('{{ entry.id }}')">Approve Asset</button>
-
-          </div>
-        
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-
   {% else %}
   <p>No activity log entries found.</p>
   {% endif %}
@@ -213,98 +80,59 @@ block content %}
     <tbody>
       {% for entry in completed %}
       <tr>
-
         <td class="{% if entry.status == 'Action Needed' %} attention-needed {% elif entry.status == 'Approved' %} completed {% endif %}">{{ entry.status }}</td>
         <td>{{ entry.user_email }}</td>
         <td>{{ entry.action_type }}</td>
         <td>{{ entry.asset_name }}</td>
         <td>{{ entry.created_at }}</td>
         <td>
-          <a
-            href="/download_file_folder?path={{ entry.path | urlencode }}"
-            download
-          >
-            {{ entry.path }}
-          </a>
-          >
+          <a href="/download_file_folder?path={{ entry.path | urlencode }}" download>{{ entry.path }}</a>
         </td>
         <td>
-          <!-- <div>
-            <button>
-              <a
-                href="{{ url_for('assignments', asset_path=entry.path) }}"
-                class="btn reassign-btn"
-                >Re-assign</a
-              >
-            </button>
-          </div> -->
           <div>
-            <button
-              onclick="previewAsset('{{ entry.path }}', '{{ entry.id }}')"
-            >
-              Preview
-            </button>
+            <button class="btn preview-btn" onclick="previewAsset('{{ entry.path }}', '{{ entry.id }}')">Preview</button>
           </div>
           <div>
-            <button>
-              <a
-                href="https://www.dropbox.com/home/Apps/KingSizeGamesAssetManager/{{ entry.path }}"
-                class="btn view-dropbox-btn"
-                >View in Dropbox</a
-              >
+            <button class="btn view-dropbox-btn">
+              <a href="https://www.dropbox.com/home/Apps/KingSizeGamesAssetManager/{{ entry.path }}">View in Dropbox</a>
             </button>
           </div>
-          <div>
-
-        
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-
   {% else %}
   <p>No completed log entries found.</p>
   {% endif %}
 </section>
+
 <!-- Image Preview Modal -->
 <div id="previewModal" class="modal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="previewModalLabel">Asset Preview</h5>
-        <button
-          type="button"
-          class="btn-close"
-          onclick="closeModal('previewModal')"
-        >
-          &times;
-        </button>
+        <h5 class="modal-title">Asset Preview</h5>
+        <button type="button" class="btn-close" onclick="closeModal('previewModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="preview-container">
-          <img id="imagePreview" src="" alt="Asset Preview" />
+          <img id="imagePreview" src="" alt="Asset Preview">
           <div id="comments" class="comments-section">
             <!-- Comments will be loaded here -->
           </div>
         </div>
         <!-- Add Comment Section -->
         <div class="add-comment-section">
-          <textarea id="new-comment" placeholder="Add a comment"></textarea>
-          <button onclick="addComment()">Add Comment</button>
+          <textarea id="new-comment" data-activity-id="" placeholder="Add a comment"></textarea>
+          <button class="btn" onclick="addComment()">Add Comment</button>
         </div>
       </div>
       <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="closeModal('previewModal')"
-        >
-          Close
-        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('previewModal')">Close</button>
       </div>
     </div>
   </div>
 </div>
-
 {% endblock %}
+

@@ -1,20 +1,32 @@
+:root {
+    --primary-color: #333;
+    --hover-color: #555;
+    --sidebar-bg-color: #f0f0f0;
+    --user-nav-bg-color: #e0e0e0;
+    --hover-bg-color: #0ba22e54;
+}
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     display: flex;
     min-height: 100vh;
+    background-color: #fff;
 }
 
 .sidebar {
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Aligns navigation to the top and user links to the bottom */
-    height: 100vh; /* Full height to ensure the sidebar spans the whole viewport height */
+    justify-content: space-between;
+    height: 100vh;
+    background-color: var(--sidebar-bg-color);
+    padding: 10px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
 .sidebar h3 {
-    color: #333;
+    color: var(--primary-color);
 }
 
 .sidebar ul {
@@ -27,40 +39,70 @@ body {
 }
 
 .sidebar ul li a {
-    color: #333;
+    color: var(--primary-color);
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.3s, background-color 0.3s;
 }
 
 .sidebar ul li a:hover {
-    color: #555;
+    color: var(--hover-color);
+    background-color: var(--hover-bg-color);
+    border-radius: 5px;
 }
 
 .content {
     flex-grow: 1;
     padding: 20px;
-    background-color: #fff;
     overflow: auto;
 }
 
 .main-nav, .user-nav {
-    list-style-type: none; /* Removes list bullets */
+    list-style-type: none;
     padding: 0;
 }
 
 .main-nav a, .user-nav a {
     display: block;
     padding: 10px;
-    color: #333;
+    color: var(--primary-color);
     text-decoration: none;
 }
 
 .main-nav a:hover, .user-nav a:hover {
-    background-color: #0ba22e54;
-border-radius: 5px;
+    background-color: var(--hover-bg-color);
+    border-radius: 5px;
 }
 
 .user-nav {
-    margin-top: auto; /* Pushes user-nav to the bottom */
-    background: #e0e0e0; /* Gives a slight background differentiation */
+    margin-top: auto;
+    background-color: var(--user-nav-bg-color);
+    padding: 10px;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        height: auto;
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 0;
+    }
+
+    .sidebar ul {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .sidebar ul li {
+        padding: 10px;
+    }
+
+    .content {
+        padding: 10px;
+    }
 }

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Successful</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/upload.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>{{ message }}</h2>
+        <a href="{{ url_for('upload_file') }}" class="btn">Upload More Files</a>
+    </div>
+</body>
+</html>

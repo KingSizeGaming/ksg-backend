@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}KSG{% endblock %}</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-        {% block head %}{% endblock %}  <!-- Additional elements can be added here in child templates -->
-    </head>
-    
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}KSG{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    {% block head %}{% endblock %}
+</head>
 <body>
     <div class="sidebar">
         <h3>Menu</h3>
@@ -15,10 +14,8 @@
             <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
             <li><a href="{{ url_for('assignments') }}">Assignments</a></li>
             <li><a href="{{ url_for('upload_file') }}">Upload File</a></li>
-
             <li><a href="{{ url_for('explorer') }}">File Explorer</a></li>
         </ul>
-        <!-- Place user authentication links at the bottom of the sidebar -->
         <ul class="user-nav">
             {% if current_user.is_authenticated %}
                 <li>Logged in as {{ current_user.email }}</li>
@@ -28,11 +25,10 @@
             {% endif %}
         </ul>
     </div>
-    <div class="content">
-        {% block content %}
-        <!-- Content unique to each page will go here -->
-        {% endblock %}
-    </div>
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>
+
 
