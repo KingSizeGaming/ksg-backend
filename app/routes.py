@@ -58,39 +58,6 @@ def init_routes(app):
     def login():
         return render_template("login.html")
 
-    # @app.route("/register", methods=["GET", "POST"])
-    # def register():
-    #     supabase = get_supabase()
-    #     if request.method == "POST":
-    #         password = request.form.get("password")
-    #         confirm_password = request.form.get("confirmPassword")
-    #         token = request.form.get("registrationToken")
-    #         print(token)
-
-    #         if password != confirm_password:
-    #             flash("Passwords do not match!", "error")
-    #             return redirect(url_for("register"))
-
-    #         if not token:
-    #             flash("No registration token provided!", "error")
-    #             return redirect(url_for("register"))
-
-    #         try:
-
-    #             result = supabase.auth.sign_up(email=None, password=password)
-    #             if result.error:
-    #                 flash(f"Registration failed: {result.error.message}", "error")
-    #                 return redirect(url_for("register"))
-    #             flash("Registration successful!", "success")
-    #             return redirect(
-    #                 url_for("login")
-    #             )  # Redirect to login page after successful registration
-    #         except Exception as e:
-    #             flash(f"An error occurred: {str(e)}", "error")
-    #             return redirect(url_for("register"))
-
-    #     # Serve the registration page
-    #     return render_template("register.html")
 
     @app.route("/dashboard")
     @login_required
@@ -390,33 +357,79 @@ def init_routes(app):
         else:
             return jsonify({"error": "Failed to get image URL"}), 404
 
-    @app.route("/reset")
-    def reset_password_form():
-        token = request.args.get("token")
-        return render_template("reset.html", token=token)
+    @app.route('/reset', methods=['GET'])
+    def reset():
+        # Render the create password page; the token will be extracted by JavaScript
+        return render_template('create_password.html')
 
-    @app.route("/submit-new-password", methods=["POST"])
-    def submit_new_password():
-        token = request.form["token"]
-        new_password = request.form["password"]
-        confirm_password = request.form["confirmPassword"]
+    @app.route('/reset_password', methods=['POST'])
+    def reset_password():
+        data = request.json
+        new_password = data.get('new_password')
+        access_token = data.get('access_token')
+        refresh_token = data.get('refresh_token')
+        print(data)
+
+        if not new_password or not access_token or not refresh_token:
+            return jsonify({'message': 'New password, access token, and refresh token are required'}), 400
+
         supabase = get_supabase()
+        try:
+            # Set the session using the access token and refresh token
+            session_response = supabase.auth.set_session(access_token, refresh_token)
 
-        if new_password != confirm_password:
-            flash("Passwords do not match!", "error")
-            return redirect(url_for("reset"))
+            if not session_response:
+                return jsonify({'message': 'Failed to set session'}), 400
+
+            # Update the password using the established session
+            response = supabase.auth.update_user({"password": new_password})
+
+            if not response:
+                return jsonify({'message': 'Password set successfully'}), 200
+            else:
+                return jsonify({'message': 'Failed to set password', 'details': response.get('error')}), 400
+        except Exception as e:
+            # Log the exception for debugging
+            return jsonify({'message': str(e)}), 500
+
+
+    @app.route('/change_password', methods=['GET', 'POST'])
+    def change_password():
+        supabase = get_supabase()
+        if request.method == 'GET':
+            return render_template('change_password.html')
+
+        data = request.json
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        user = current_user
 
         try:
-            # Update the password using the Supabase token
-            response = supabase.auth.update_user(token, {"password": new_password})
-            if response["error"]:
-                flash(response["error"]["message"], "error")
-                return redirect(url_for("reset"))
+            # Verify the current password by re-authenticating
+            u = supabase.auth.sign_in_with_password(
+                {"email": user.email, "password": current_password}
+            )
+            token = supabase.auth.get_session().access_token
+            print(token)
 
-            flash("Password reset successful!", "success")
-            return redirect(
-                url_for("login")
-            )  # Redirect to login page or wherever appropriate
+            if u:
+                # Update the password
+                response = supabase.auth.update_user(
+                    {"password": new_password, "access_token": token}
+                )
+                print(response)
+                if response:
+                    flash("Password changed successfully", "success")
+                    return jsonify({'message': 'Password changed successfully'}), 200
+                else:
+                    flash("Failed to update password", "error")
+                    return jsonify({'message': 'Failed to update password'}), 400
+            else:
+                flash("Current password is incorrect", "error")
+                return jsonify({'message': 'Current password is incorrect'}), 400
         except Exception as e:
+            # Log the exception for debugging
             flash(str(e), "error")
-            return redirect(url_for("reset"))
+            return jsonify({'message': str(e)}), 500
+

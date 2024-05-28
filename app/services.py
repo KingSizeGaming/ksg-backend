@@ -16,6 +16,9 @@ import requests
 from dropbox.exceptions import HttpError
 import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def dropbox_connect():
     return dropbox.Dropbox(
@@ -23,6 +26,12 @@ def dropbox_connect():
         app_key=current_app.config["DROPBOX_APP_KEY"],
         app_secret=current_app.config["DROPBOX_APP_SECRET"],
     )
+
+
+def create_temp_dir(base_dir):
+    temp_dir = os.path.join(base_dir, "temp", "upload")
+    os.makedirs(temp_dir, exist_ok=True)
+    return temp_dir
 
 
 def get_versions_info(dbx, path, game, asset):
@@ -233,41 +242,63 @@ def get_comments_by_activity_id(supabase, activity_id):
         return None
 
 
-def dropbox_upload_file(local_path, dropbox_path):
+def dropbox_upload_file(
+    local_path, dropbox_path, chunk_size=100 * 1024 * 1024, max_retries=5, retry_delay=2
+):
     dbx = dropbox_connect()
-    CHUNK_SIZE = 100 * 1024 * 1024  # 4MB chunks
-    MAX_RETRIES = 5
-    RETRY_DELAY = 2  # in seconds
+    file_size = os.path.getsize(local_path)
 
     with open(local_path, "rb") as f:
-        file_size = os.path.getsize(local_path)
-
-        # if file_size <= CHUNK_SIZE:
-        #     return attempt_upload(dbx, f, dropbox_path, MAX_RETRIES, RETRY_DELAY)
-        # else:
-        return upload_large_file_in_chunks(
-                dbx, f, dropbox_path, file_size, CHUNK_SIZE, MAX_RETRIES, RETRY_DELAY
+        if file_size <= chunk_size:
+            return attempt_upload(dbx, f, dropbox_path, max_retries, retry_delay)
+        else:
+            return upload_large_file_in_chunks(
+                dbx, f, dropbox_path, file_size, chunk_size, max_retries, retry_delay
             )
 
 
-def upload_large_file_in_chunks(dbx, file_handle, dropbox_path, file_size, chunk_size, max_retries, retry_delay):
+def attempt_upload(dbx, file_handle, dropbox_path, max_retries, retry_delay):
+    for attempt in range(max_retries):
+        try:
+            dbx.files_upload(file_handle.read(), dropbox_path, mute=True)
+            logger.info(f"Successfully uploaded file to Dropbox: {dropbox_path}")
+            return True
+        except (ApiError, HttpError, requests.exceptions.ConnectionError) as err:
+            logger.error(
+                f"Attempt {attempt + 1} failed to upload {dropbox_path}: {err}"
+            )
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error(
+                    f"Failed to upload {dropbox_path} after {max_retries} attempts."
+                )
+                return False
+
+
+def upload_large_file_in_chunks(
+    dbx, file_handle, dropbox_path, file_size, chunk_size, max_retries, retry_delay
+):
     try:
         if file_size <= chunk_size:
-            # If the file is smaller than the chunk size, upload it in one go
-            upload_session_start_result = dbx.files_upload_session_start(file_handle.read())
+            upload_session_start_result = dbx.files_upload_session_start(
+                file_handle.read()
+            )
             cursor = dropbox.files.UploadSessionCursor(
-                session_id=upload_session_start_result.session_id, offset=file_handle.tell()
+                session_id=upload_session_start_result.session_id,
+                offset=file_handle.tell(),
             )
             commit = dropbox.files.CommitInfo(path=dropbox_path)
             dbx.files_upload_session_finish(file_handle.read(), cursor, commit)
             return True
         else:
-            # For larger files, upload in chunks
             upload_session_start_result = dbx.files_upload_session_start(
                 file_handle.read(chunk_size)
             )
             cursor = dropbox.files.UploadSessionCursor(
-                session_id=upload_session_start_result.session_id, offset=file_handle.tell()
+                session_id=upload_session_start_result.session_id,
+                offset=file_handle.tell(),
             )
             commit = dropbox.files.CommitInfo(path=dropbox_path)
 
@@ -283,13 +314,18 @@ def upload_large_file_in_chunks(dbx, file_handle, dropbox_path, file_size, chunk
                     )
                 else:
                     attempt_upload_session_append(
-                        dbx, file_handle.read(chunk_size), cursor, max_retries, retry_delay
+                        dbx,
+                        file_handle.read(chunk_size),
+                        cursor,
+                        max_retries,
+                        retry_delay,
                     )
                     cursor.offset = file_handle.tell()
             return True
     except Exception as err:
-        print(f"Failed to start or continue upload session: {err}")
+        logger.error(f"Failed to start or continue upload session: {err}")
         return False
+
 
 def attempt_upload_session_append(dbx, data, cursor, max_retries, retry_delay):
     for attempt in range(max_retries):
@@ -297,13 +333,16 @@ def attempt_upload_session_append(dbx, data, cursor, max_retries, retry_delay):
             dbx.files_upload_session_append_v2(data, cursor)
             return
         except (ApiError, HttpError, requests.exceptions.ConnectionError) as err:
-            print(f"Attempt {attempt + 1} failed during session append: {err}")
+            logger.error(f"Attempt {attempt + 1} failed during session append: {err}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
-                print(f"Failed to append to upload session after {max_retries} attempts.")
+                logger.error(
+                    f"Failed to append to upload session after {max_retries} attempts."
+                )
                 raise
+
 
 def attempt_upload_session_finish(dbx, data, cursor, commit, max_retries, retry_delay):
     for attempt in range(max_retries):
@@ -311,19 +350,18 @@ def attempt_upload_session_finish(dbx, data, cursor, commit, max_retries, retry_
             dbx.files_upload_session_finish(data, cursor, commit)
             return
         except (ApiError, HttpError, requests.exceptions.ConnectionError) as err:
-            print(f"Attempt {attempt + 1} failed during session finish: {err}")
+            logger.error(f"Attempt {attempt + 1} failed during session finish: {err}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
-                print(f"Failed to finish upload session after {max_retries} attempts.")
+                logger.error(
+                    f"Failed to finish upload session after {max_retries} attempts."
+                )
                 raise
 
 
-
 def list_folders(dbx, path=""):
-    """List all folders within the specified path."""
-
     try:
         folders = dbx.files_list_folder(path).entries
         folder_names = [
@@ -333,57 +371,55 @@ def list_folders(dbx, path=""):
         ]
         return folder_names
     except Exception as e:
-        print(f"Failed to list folders: {e}")
+        logger.error(f"Failed to list folders: {e}")
         return []
 
 
 def process_and_upload_file(uploaded_file, selected_folder, folder_options, dbx):
     filename = secure_filename(uploaded_file.filename)
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{filename.rsplit('.', 1)[0]}_{timestamp}.{filename.rsplit('.', 1)[1]}"
-    temp_dir = os.path.join(current_app.root_path, "temp")
-    os.makedirs(temp_dir, exist_ok=True)  # Ensure the directory exists
+    temp_dir = create_temp_dir(current_app.root_path)
     temp_file_path = os.path.join(temp_dir, filename)
 
-    uploaded_file.save(temp_file_path)  # Save the file to the temporary directory
+    try:
+        uploaded_file.save(temp_file_path)  # Save the file to the temporary directory
+        logger.info(f"Saved file to temporary path: {temp_file_path}")
 
-    if selected_folder in folder_options:
-        dropbox_file_path = f"/{selected_folder}/{filename}"
-        success = upload_file_with_retries(temp_file_path, dropbox_file_path, dbx)
+        if selected_folder in folder_options:
+            dropbox_file_path = f"/{selected_folder}/{filename}"
+            success = upload_file_with_retries(temp_file_path, dropbox_file_path, dbx)
 
+            if success:
+                log_activity(
+                    "Action Needed",
+                    get_supabase(),
+                    current_user.email,
+                    "upload",
+                    filename,
+                    dropbox_file_path,
+                )
+            else:
+                flash("Error uploading file to Dropbox.", "error")
+                log_activity(
+                    "failure",
+                    get_supabase(),
+                    current_user.email,
+                    "upload",
+                    filename,
+                    dropbox_file_path,
+                )
+    finally:
         os.remove(temp_file_path)  # Clean up the temporary file after upload
-
-        if success:
-            log_activity(
-                "Action Needed",
-                get_supabase(),
-                current_user.email,
-                "upload",
-                filename,
-                dropbox_file_path,
-            )
-        else:
-            flash("Error uploading file to Dropbox.", "error")
-            log_activity(
-                "failure",
-                get_supabase(),
-                current_user.email,
-                "upload",
-                filename,
-                dropbox_file_path,
-            )
 
 
 def process_and_upload_folder(directory_files, selected_folder, folder_options, dbx):
-    temp_dir = os.path.join(current_app.root_path, "temp", "upload")
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    os.makedirs(temp_dir, exist_ok=True)
+    temp_dir = create_temp_dir(current_app.root_path)
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    # Determine the original folder name and create a new folder name with the timestamp
     original_folder_name = directory_files[0].filename.split("/")[0]
     new_folder_name = f"{original_folder_name}_{timestamp}"
 
-    # Save the uploaded files to the temporary directory, maintaining folder structure
     for directory_file in directory_files:
         if directory_file.filename:
             relative_path = directory_file.filename.replace(
@@ -393,7 +429,6 @@ def process_and_upload_folder(directory_files, selected_folder, folder_options, 
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             directory_file.save(file_path)
 
-    # Traverse the temporary directory and upload files to Dropbox, maintaining folder structure
     all_success = True
     for root, _, files in os.walk(temp_dir):
         for file in files:
@@ -406,7 +441,6 @@ def process_and_upload_folder(directory_files, selected_folder, folder_options, 
             if not success:
                 all_success = False
 
-    # Clean up the temporary directory
     cleanup_temp_dir(temp_dir)
 
     if all_success:
@@ -430,7 +464,6 @@ def process_and_upload_folder(directory_files, selected_folder, folder_options, 
 
 
 def upload_file_with_retries(local_file_path, dropbox_path, dbx, retries=5):
-    """Attempt to upload a file to Dropbox with retries."""
     for attempt in range(retries):
         try:
             success = dropbox_upload_file(local_file_path, dropbox_path)
@@ -448,14 +481,12 @@ def upload_file_with_retries(local_file_path, dropbox_path, dbx, retries=5):
 
 
 def cleanup_temp_dir(temp_dir):
-    """Clean up the temporary directory."""
     for root, dirs, files in os.walk(temp_dir, topdown=False):
         for name in files:
             os.remove(os.path.join(root, name))
         for name in dirs:
             os.rmdir(os.path.join(root, name))
     os.rmdir(temp_dir)
-
 
 
 def list_files(dbx, path):
