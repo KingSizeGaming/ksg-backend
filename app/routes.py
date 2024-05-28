@@ -369,28 +369,31 @@ def init_routes(app):
         access_token = data.get('access_token')
         refresh_token = data.get('refresh_token')
         print(data)
-
+    
         if not new_password or not access_token or not refresh_token:
             return jsonify({'message': 'New password, access token, and refresh token are required'}), 400
-
+    
         supabase = get_supabase()
         try:
             # Set the session using the access token and refresh token
             session_response = supabase.auth.set_session(access_token, refresh_token)
-
+    
             if not session_response:
                 return jsonify({'message': 'Failed to set session'}), 400
-
+    
             # Update the password using the established session
             response = supabase.auth.update_user({"password": new_password})
-
+    
+            # Check if the response indicates success or failure
             if not response:
-                return jsonify({'message': 'Password set successfully'}), 200
+                return jsonify({'message': 'Failed to set password'}), 400
             else:
-                return jsonify({'message': 'Failed to set password', 'details': response.get('error')}), 400
+                return jsonify({'message': 'Password set successfully'}), 200
         except Exception as e:
             # Log the exception for debugging
+            print(f"Exception occurred: {e}")
             return jsonify({'message': str(e)}), 500
+    
 
 
     @app.route('/change_password', methods=['GET', 'POST'])
