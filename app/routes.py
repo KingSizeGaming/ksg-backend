@@ -198,6 +198,7 @@ def init_routes(app):
             if files and files[0].filename:
                 any_files_uploaded = True
                 for uploaded_file in files:
+                    print(uploaded_file)
                     process_and_upload_file(uploaded_file, selected_folder, folder_options, dbx)
     
             # Process directory files

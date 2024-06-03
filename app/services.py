@@ -144,6 +144,8 @@ def list_users():
         "prince@kingsizegames.com",
         "ruth@kingsizegames.com",
         "whavenga@kingsizegames.com",
+        "bedick@kingsizegames.com"
+        
     ]
     return data
 
@@ -375,17 +377,28 @@ def list_folders(dbx, path=""):
         return []
 
 
-def remove_existing_timestamp(filename):
-    pattern = re.compile(r"_\d{8}_\d{6}$")
+def sanitize_filename(filename):
+    # Remove existing timestamp
+    timestamp_pattern = re.compile(r'_\d{8}_\d{6}')
     name, ext = os.path.splitext(filename)
-    name = re.sub(pattern, "", name)
+    name = re.sub(timestamp_pattern, '', name)
+    
+    # Remove unwanted duplicate indicators such as _1, _2, etc.
+    duplicate_pattern = re.compile(r'_\d+$')
+    name = re.sub(duplicate_pattern, '', name)
+    
+    # Remove trailing underscores
+    name = name.rstrip("_")
+    
     return f"{name}{ext}"
 
 
 def process_and_upload_file(uploaded_file, selected_folder, folder_options, dbx):
+    print(f"Uploed file: {uploaded_file.filename}")
     filename = secure_filename(uploaded_file.filename)
+    print(f"Secure filename: {filename}")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = remove_existing_timestamp(filename)
+    filename = sanitize_filename(filename)
     filename = f"{filename.rsplit('.', 1)[0]}_{timestamp}.{filename.rsplit('.', 1)[1]}"
     temp_dir = create_temp_dir(current_app.root_path)
     temp_file_path = os.path.join(temp_dir, filename)
@@ -426,7 +439,7 @@ def process_and_upload_folder(directory_files, selected_folder, folder_options, 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     original_folder_name = directory_files[0].filename.split("/")[0]
-    original_folder_name = remove_existing_timestamp(original_folder_name)
+    original_folder_name = sanitize_filename(original_folder_name)
 
     new_folder_name = f"{original_folder_name}_{timestamp}"
 
