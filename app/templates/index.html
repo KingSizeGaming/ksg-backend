@@ -1,28 +1,112 @@
-{% extends 'base.html' %}
-
-{% block head %}
-    {{ super() }}  <!-- Retains everything from the base template's head block -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block head %} {{ super() }}
+<!-- Retains everything from the base template's head block -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/index.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="header">
-    <h1>Welcome to Art Asset Manager</h1>
-
+  <h1>Welcome to Art Asset Manager</h1>
 </div>
 <section id="updates">
-    <h2>Latest Updates</h2>
-    <article>
-        <h3>Art Asset Manager is Live!</h3>
-        <p>Date: 2024-04-21</p>
-        <p>I'm excited to annouce the launch of the KingSize Games Art Asset Manegement Tool. Consider this the beta version and please email me with any bugs/flaws you find with the tool.</p>
-    </article>
-    <!-- Additional updates can be added in similar <article> tags -->
+  <h2>Latest Updates</h2>
+  <article>
+    <h4>Uploading Your Work</h4>
+    <p>
+      The "Upload File" tab is your go-to for submitting your work. Here’s how
+      you can use it:
+    </p>
+    <ul>
+      <li>
+        <strong>Select the Game:</strong> Start by choosing the game to which
+        your work belongs. This helps in organizing and categorizing your
+        submissions accurately.
+      </li>
+      <li>
+        <strong>Upload a Single File:</strong> If you have a single file to
+        upload, use the "Single File Upload" option. Click on the button, select
+        your file from your device, and hit upload. It's that simple!
+      </li>
+      <li>
+        <strong>Upload a Folder:</strong> For multiple files organized in a
+        folder, use the "Upload Folder" option. Select the entire folder from
+        your device and upload it in one go. This keeps all related files
+        together and saves time.
+      </li>
+    </ul>
+
+    <h4>Tracking Your Submissions</h4>
+    <p>
+      The "Dashboard" tab is where you can keep track of all the work you have
+      submitted. Here’s what you can do:
+    </p>
+    <ul>
+      <li>
+        <strong>View Submissions:</strong> You can see a list of all your
+        submitted work by clicking Preview Asset, making it easy to review what has been uploaded.
+      </li>
+      <li>
+        <strong>Leave Comments:</strong> For any submitted work, you can leave
+        comments. This is useful for providing additional information,
+        clarifications, or any feedback related to the submission.
+      </li>
+    </ul>
+
+    <h4>Managing Your Files</h4>
+    <p>
+      The "File Explorer" tab allows you to download files you have previously
+      uploaded. Here’s how to use it:
+    </p>
+    <ul>
+      <li>
+        <strong>Browse Files:</strong> Navigate through your uploaded files
+        using the File Explorer. This tool is designed to be intuitive and
+        user-friendly.
+      </li>
+      <li>
+        <strong>Download Files:</strong> Simply click the icon next to any file you wish to
+        download. This will save a copy to your device for offline access or
+        further editing.
+      </li>
+    </ul>
+
+    <h4>Important Notice</h4>
+    <p>
+      Currently, the "Assignments" tab is still under construction and is not
+      operational. Please ensure all your file and folder uploads are done
+      through the "Upload File" tab as described above. We appreciate your
+      patience as we work on improving the platform.
+    </p>
+
+    <p>
+      We hope this guide helps you navigate the app with ease. Should you have
+      any questions or encounter any issues, please do not hesitate to contact
+      our support team.
+    </p>
+  </article>
+  <article>
+    <h3>Assignments Page is still under construction</h3>
+    <p>Date: 2024-06-03</p>
+    <p>
+      The assignments tab is not currently operational, please upload all files
+      and folders through the Upload File tab.
+    </p>
+  </article>
+  <article>
+    <h3>Art Asset Manager is Live!</h3>
+    <p>Date: 2024-04-21</p>
+    <p>
+      I'm excited to annouce the launch of the KingSize Games Art Asset
+      Manegement Tool. Consider this the beta version and please email me with
+      any bugs/flaws you find with the tool.
+    </p>
+  </article>
+  <!-- Additional updates can be added in similar <article> tags -->
 </section>
 <footer>
-    <p>Contact us at <a href="mailto:kwilcox@kingsizegames.com">kwilcox@kingsizegames.com</a></p>
+  <p>
+    Contact us at
+    <a href="mailto:kwilcox@kingsizegames.com">kwilcox@kingsizegames.com</a>
+  </p>
 </footer>
 {% endblock %}
-
-
-
