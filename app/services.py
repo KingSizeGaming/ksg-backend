@@ -375,9 +375,17 @@ def list_folders(dbx, path=""):
         return []
 
 
+def remove_existing_timestamp(filename):
+    pattern = re.compile(r"_\d{8}_\d{6}$")
+    name, ext = os.path.splitext(filename)
+    name = re.sub(pattern, "", name)
+    return f"{name}{ext}"
+
+
 def process_and_upload_file(uploaded_file, selected_folder, folder_options, dbx):
     filename = secure_filename(uploaded_file.filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = remove_existing_timestamp(filename)
     filename = f"{filename.rsplit('.', 1)[0]}_{timestamp}.{filename.rsplit('.', 1)[1]}"
     temp_dir = create_temp_dir(current_app.root_path)
     temp_file_path = os.path.join(temp_dir, filename)
@@ -418,6 +426,8 @@ def process_and_upload_folder(directory_files, selected_folder, folder_options, 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     original_folder_name = directory_files[0].filename.split("/")[0]
+    original_folder_name = remove_existing_timestamp(original_folder_name)
+
     new_folder_name = f"{original_folder_name}_{timestamp}"
 
     for directory_file in directory_files:
